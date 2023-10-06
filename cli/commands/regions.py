@@ -4,7 +4,7 @@ from rich.table import Table
 from cli.routes import V1Routes
 from cli.utils import make_request_with_api_key, parse_config_file
 
-from gateway.domain.regions.dtos import RegionCreate, RegionUpdate
+from cli.models.regions import RegionCreate, RegionUpdate
 
 console = Console()
 regions_app = Typer()

@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import Field
 
-from cli.types.accounts import AccountRegister
+from cli.models.accounts import AccountRegister
 
 
 class ProviderCreate(AccountRegister):

@@ -4,7 +4,7 @@ from rich.table import Table
 from cli.routes import V1Routes
 from cli.utils import make_request_with_api_key, parse_config_file
 
-from cli.types.users import UserCreate
+from cli.models.users import UserCreate
 
 console = Console()
 users_app = Typer()
