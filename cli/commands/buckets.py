@@ -3,12 +3,10 @@ from typer import Typer, Option, Argument
 from rich.console import Console
 from rich.table import Table
 
-# from rich.table import Table
-
 from cli.routes import V1Routes
 from cli.utils import make_request_with_api_key, parse_config_file
 
-from gateway.domain.buckets.dtos import BucketCreate, BucketUpdate
+from cli.types.buckets import BucketCreate, BucketUpdate
 
 console = Console()
 buckets_app = Typer()

@@ -4,7 +4,7 @@ from rich.table import Table
 from cli.routes import V1Routes
 from cli.utils import make_request_with_api_key, parse_config_file
 
-from gateway.domain.providers.dtos import ProviderCreate
+from cli.types.providers import ProviderCreate
 
 console = Console()
 providers_app = Typer()

@@ -6,7 +6,7 @@ from rich.table import Table
 from cli.routes import V1Routes
 from cli.utils import make_request_with_api_key, parse_config_file
 
-from gateway.domain.entrypoints.dtos import EntrypointCreate, EntrypointUpdate
+from cli.types.entrypoints import EntrypointCreate, EntrypointUpdate
 
 console = Console()
 entrypoints_app = Typer()

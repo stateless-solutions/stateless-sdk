@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stateless-gateway-cli"
+version = "0.0.1"
+authors = [{name = "blockjoe", email = "joe@stateless.solutions"}]
+description = "A CLI for interacting with the Stateless Gateway"
+dependencies = [
+    "typer~=0.9.0",
+    "pydantic~=2.4.2",
+    "httpx~=0.24.1",
+    "rich~=13.6.0",
+    "ujson~=5.8.0"
+]
+
+scripts = {}
+
+[project.optional-dependencies]
+dev = [
+    "black>=23.7.0",
+    "flake8",
+    "isort"
+]
+testing = ["pytest", "pytest-asyncio", "pytest-dotenv", "pytest-httpx", "pytest-cov", "respx"]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages]
+find = {namespaces = false}
+
+[tool.black]
+extend-exlcude = '^/alembic/versions/.*\.py'

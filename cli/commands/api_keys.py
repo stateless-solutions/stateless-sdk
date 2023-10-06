@@ -3,7 +3,7 @@ from rich.console import Console
 from rich.table import Table
 from cli.routes import V1Routes
 from cli.utils import make_request_with_api_key, parse_config_file
-from gateway.domain.api_keys.dtos import APIKeyUpdate, APIKeyCreate
+from cli.types.api_keys import APIKeyUpdate, APIKeyCreate
 
 console = Console()
 api_keys_app = Typer()
