@@ -16,5 +16,8 @@ python main.py offerings create --config-file ./examples/offering_config.json
 # Create an entrypoint in the offering using a provider API Key
 python main.py entrypoints create --config-file ./examples/entrypoint_config.json
 
-# Create a bucket including the previous offering using a regular API Key
+# Create a bucket using a regular API Key
 python main.py buckets create --config-file ./examples/bucket_config.json
+
+# Add offering to previously created bucket using a regular API Key
+python main.py buckets update --config-file ./examples/bucket_update_config.json f4853c7a-55be-4c22-a1d6-82e213da6e74
