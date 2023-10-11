@@ -53,7 +53,7 @@ def parse_config_file(file_path: str, model: Type[BaseModel]) -> Type[BaseModel]
         json_data = ujson.load(f)
 
     try:
-        validated_data = model.model_validate_json(json_data)
+        validated_data = model.model_validate(json_data)
     except ValidationError as e:
         console.print(f"Error: {e}")
         raise Exit(1)

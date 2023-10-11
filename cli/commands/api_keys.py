@@ -23,7 +23,7 @@ def create_api_key(
     json_response = response.json()
 
     if response.status_code == 201:
-        console.print(f"Successfully created API key {json_response['id']}")
+        console.print(f"Successfully created API key {json_response['key']}")
     else:
         console.print(f"Error creating API key: {json_response['detail']}")
 

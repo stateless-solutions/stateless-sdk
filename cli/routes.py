@@ -1,5 +1,5 @@
 class BaseUrl:
-    V1 = "http://localhost:8000/v1"
+    V1 = "https://api.dev.bloodboys.club/v1"
 
 
 class V1Routes:
