@@ -61,10 +61,11 @@ def parse_config_file(file_path: str, model: Type[BaseModel]) -> Type[BaseModel]
     return validated_data
 
 
-def handle_response(response: httpx.Response, success_message, error_message):
-    json_response = response.json()
+def handle_api_response(response):
     if response.status_code in [200, 201, 204]:
-        console.print(success_message.format(**json_response))
+        if response.status_code != 204:  # No content
+            json_response = response.json()
+            console.print(json_response)
     else:
-        console.print(f"{error_message}: {json_response['detail']}")
-        raise Exit(1)  # Exit with an error status
+        console.print(f"Error: {response.text}", style="bold red")
+        raise Exit(code=1)

@@ -1,88 +1,130 @@
-from typer import Typer, Option, Argument
+import typer
+from pydantic import ValidationError
 from rich.console import Console
 from rich.table import Table
+
 from cli.routes import V1Routes
-from cli.utils import make_request_with_api_key, parse_config_file
+from cli.utils import make_request_with_api_key, parse_config_file, handle_api_response
 from cli.models.chains import ChainCreate, ChainUpdate
 
 console = Console()
-chains_app = Typer()
+chains_app = typer.Typer()
+
+
+def prompt_for_chain_create() -> ChainCreate:
+    try:
+        chain_id = typer.prompt("Chain ID", type=int)
+        name = typer.prompt("Chain Name")
+        return ChainCreate(chain_id=chain_id, name=name)
+    except ValidationError as e:
+        console.print(f"Validation Error: {e}")
+        raise typer.Abort()
+
+
+def prompt_for_chain_update() -> ChainUpdate:
+    try:
+        name = typer.prompt("New Chain Name", default=None)
+        return ChainUpdate(name=name)
+    except ValidationError as e:
+        console.print(f"Validation Error: {e}")
+        raise typer.Abort()
 
 
 @chains_app.command("create")
 def create_chain(
-    config_file: str = Option(
-        ..., help="The path to a JSON file with the chain creation data."
+    config_file: str = typer.Option(
+        None,
+        "--config-file",
+        "-c",
+        help="The path to a JSON file with the chain creation data.",
     )
 ):
-    chain_create = parse_config_file(config_file, ChainCreate)
-    response = make_request_with_api_key(
-        "POST", V1Routes.CHAINS, chain_create.model_dump_json()
-    )
-
-    json_response = response.json()
-
-    if response.status_code == 201:
-        console.print(f"Successfully created chain {json_response['id']}")
-    else:
-        console.print(f"Error creating chain: {json_response['detail']}")
+    try:
+        if config_file:
+            chain_create = parse_config_file(config_file, ChainCreate)
+        else:
+            chain_create = prompt_for_chain_create()
+        response = make_request_with_api_key(
+            "POST", V1Routes.CHAINS, chain_create.json()
+        )
+        handle_api_response(response)
+    except Exception as e:
+        console.print(f"Unexpected error: {e}", style="bold red")
+        raise typer.Abort()
 
 
 @chains_app.command("update")
 def update_chain(
-    chain_id: int = Argument(..., help="The ID of the chain to update."),
-    config_file: str = Option(
-        ..., help="The path to a JSON file with the update data."
+    chain_id: int = typer.Argument(None, help="The ID of the chain to update."),
+    config_file: str = typer.Option(
+        None,
+        "--config-file",
+        "-c",
+        help="The path to a JSON file with the update data.",
     ),
 ):
-    chain_update = parse_config_file(config_file, ChainUpdate)
-    response = make_request_with_api_key(
-        "PATCH", f"{V1Routes.CHAINS}/{chain_id}", chain_update.model_dump_json()
-    )
-
-    json_response = response.json()
-
-    if response.status_code == 200:
-        console.print(f"Successfully updated chain {json_response['id']}")
-    else:
-        console.print(f"Error updating chain: {json_response['detail']}")
+    try:
+        chain_id = chain_id or typer.prompt("Chain ID", type=int)
+        if config_file:
+            chain_update = parse_config_file(config_file, ChainUpdate)
+        else:
+            chain_update = prompt_for_chain_update()
+        response = make_request_with_api_key(
+            "PATCH", f"{V1Routes.CHAINS}/{chain_id}", chain_update.json()
+        )
+        handle_api_response(response)
+    except Exception as e:
+        console.print(f"Unexpected error: {e}", style="bold red")
+        raise typer.Abort()
 
 
 @chains_app.command("get")
-def get_chain(chain_id: int = Argument(..., help="The ID of the chain to get.")):
-    response = make_request_with_api_key("GET", f"{V1Routes.CHAINS}/{chain_id}")
-
-    json_response = response.json()
-
-    if response.status_code == 200:
-        console.print(json_response)  # Display the chain details
-    else:
-        console.print(f"Error getting chain: {json_response['detail']}")
+def get_chain(chain_id: int = typer.Argument(None, help="The ID of the chain to get.")):
+    try:
+        chain_id = chain_id or typer.prompt("Chain ID", type=int)
+        response = make_request_with_api_key("GET", f"{V1Routes.CHAINS}/{chain_id}")
+        handle_api_response(response)
+    except Exception as e:
+        console.print(f"Unexpected error: {e}", style="bold red")
+        raise typer.Abort()
 
 
 @chains_app.command("list")
 def list_chains():
-    response = make_request_with_api_key("GET", V1Routes.LIST_CHAINS)
+    try:
+        response = make_request_with_api_key("GET", V1Routes.LIST_CHAINS)
+        if response.status_code == 200:
+            json_response = response.json()
+            table = Table(show_header=True, header_style="bold green")
+            table.add_column("ID", style="dim")
+            table.add_column("Name")
 
-    json_response = response.json()
+            for item in json_response["items"]:
+                table.add_row(
+                    str(item["chain_id"]), item["name"]
+                )  # Ensure ID is a string for rich to display
 
-    table = Table(show_header=True, header_style="green")
-    table.add_column("ID")
-    table.add_column("Name")
-    # Add more columns as needed
-
-    for item in json_response["items"]:
-        table.add_row(item["id"], item["name"])  # Add more columns as needed
-
-    console.print(table)
+            console.print(table)
+        else:
+            console.print(f"Error retrieving chains: {response.text}", style="bold red")
+            raise typer.Exit(code=1)
+    except Exception as e:
+        console.print(f"Unexpected error: {e}", style="bold red")
+        raise typer.Abort()
 
 
 @chains_app.command("delete")
-def delete_chain(chain_id: int = Argument(..., help="The ID of the chain to delete.")):
-    response = make_request_with_api_key("DELETE", f"{V1Routes.CHAINS}/{chain_id}")
+def delete_chain(
+    chain_id: int = typer.Argument(None, help="The ID of the chain to delete.")
+):
+    try:
+        chain_id = chain_id or typer.prompt("Chain ID", type=int)
+        response = make_request_with_api_key("DELETE", f"{V1Routes.CHAINS}/{chain_id}")
+        handle_api_response(response)
+    except Exception as e:
+        console.print(f"Unexpected error: {e}", style="bold red")
+        raise typer.Abort()
 
-    if response.status_code == 204:
-        console.print(f"Successfully deleted chain {chain_id}")
-    else:
-        json_response = response.json()
-        console.print(f"Error deleting chain: {json_response['detail']}")
+
+if __name__ == "__main__":
+    chains_app()
