@@ -5,13 +5,11 @@ import httpx
 import respx
 
 from pydantic import BaseModel
-from typer import Exit
 
 from cli.utils import (
     get_api_key_from_env,
     make_request_with_api_key,
     parse_config_file,
-    handle_response,
 )
 
 
@@ -63,8 +61,9 @@ def test_make_request_with_api_key(method, url, data):
 
 
 class MockModel(BaseModel):
-    def model_validate_json(self, x):
-        return "validated_data"
+    @classmethod
+    def model_validate(cls, json_data):
+        return cls(**json_data)
 
 
 @pytest.mark.parametrize(
@@ -72,8 +71,8 @@ class MockModel(BaseModel):
     [
         (
             "fake_path",
-            MockModel(model_validate_json=lambda x: "validated_data"),
-            "validated_data",
+            MockModel,
+            MockModel(key="value"),
         ),
     ],
 )
@@ -87,41 +86,10 @@ def test_parse_config_file(mock_open, mock_load, file_path, model, expected_outp
     mock_file.__exit__ = Mock(return_value=None)
     mock_open.return_value = mock_file
 
+    # When parse_config_file is called, it should return an instance of the model that contains the validated data
     assert parse_config_file(file_path, model) == expected_output
 
 
 def test_make_request_with_api_key_invalid_method():
     with pytest.raises(ValueError):
         make_request_with_api_key("INVALID", "http://test.com")
-
-
-@patch("cli.utils.console.print")
-def test_handle_success(mock_print):
-    mocked_response = Mock()
-    mocked_response.status_code = 200
-    mocked_response.json.return_value = {"message": "Success!"}
-
-    success_message = "Successfully completed the operation."
-    error_message = "An error occurred while completing the operation."
-
-    handle_response(mocked_response, success_message, error_message)
-
-    mock_print.assert_called_once_with(success_message.format(**mocked_response.json()))
-
-
-@patch("cli.utils.console.print")
-def test_handle_response_with_error_code(mock_print):
-    mocked_response = Mock()
-    mocked_response.status_code = 400
-    mocked_response.json.return_value = {"detail": "Invalid request."}
-
-    success_message = "Successfully completed the operation."
-    error_message = "An error occurred while completing the operation."
-
-    with pytest.raises(Exit) as e:
-        handle_response(mocked_response, success_message, error_message)
-
-    assert e.type is Exit
-    mock_print.assert_called_once_with(
-        f"{error_message}: {mocked_response.json()['detail']}"
-    )

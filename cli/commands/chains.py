@@ -124,7 +124,3 @@ def delete_chain(
     except Exception as e:
         console.print(f"Unexpected error: {e}", style="bold red")
         raise typer.Abort()
-
-
-if __name__ == "__main__":
-    chains_app()

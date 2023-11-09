@@ -37,7 +37,9 @@ def create_user(
             user_create = parse_config_file(config_file, UserCreate)
         else:
             user_create = prompt_for_user_create()
-        response = make_request_with_api_key("POST", V1Routes.USERS, user_create.json())
+        response = make_request_with_api_key(
+            "POST", V1Routes.USERS, user_create.model_dump_json()
+        )
         handle_api_response(response)
     except Exception as e:
         console.print(f"Unexpected error: {e}", style="bold red")
@@ -91,7 +93,3 @@ def delete_user(
     except Exception as e:
         console.print(f"Unexpected error: {e}", style="bold red")
         raise typer.Abort()
-
-
-if __name__ == "__main__":
-    users_app()
