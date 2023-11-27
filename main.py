@@ -11,7 +11,7 @@ from cli.commands.providers import providers_app
 from cli.commands.chains import chains_app
 from cli.commands.regions import regions_app
 from cli.routes import V1Routes
-from cli.utils import get_api_key_from_env, make_request_with_api_key, clear_console
+from cli.utils import get_api_key_from_env, make_request_with_api_key
 
 app = Typer()
 app.add_typer(offerings_app, name="offerings")
