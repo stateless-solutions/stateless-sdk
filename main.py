@@ -61,9 +61,8 @@ def main(ctx: Context):
                     if response.status_code == 200:
                         name: str  = json_response['name']
                         account_type: str = json_response['account_type']
-                        secho(f"Welcome, {name}!", fg="green")
-                        secho("You are logged in as a: ", nl=False)
-                        secho(f"{account_type.capitalize()}", fg="blue")
+                        secho("You are logged in as: ", nl=False)
+                        secho(f"{name} [{account_type.capitalize()}]", fg="yellow")
                         secho("Explore our commands by running `stateless-cli --help`", fg="green")
                     else:
                         secho(f"Error getting account profile: {json_response['detail']}", fg="red")
