@@ -1,4 +1,5 @@
-from typer import Typer, Option, Argument
+from typer import Typer, Option, Argument, prompt
+from typing import Optional
 from rich.console import Console
 from rich.table import Table
 from cli.routes import V1Routes
@@ -12,11 +13,16 @@ regions_app = Typer()
 
 @regions_app.command("create")
 def create_region(
-    config_file: str = Option(
-        ..., help="The path to a JSON file with the region creation data."
+    config_file: Optional[str] = Option(
+        None, help="The path to a JSON file with the region creation data."
     )
 ):
-    region_create = parse_config_file(config_file, RegionCreate)
+    if config_file:
+        region_create = parse_config_file(config_file, RegionCreate)
+    else:
+        name = prompt("Enter the name of the region")
+        region_create = RegionCreate(name=name)
+        
     response = make_request_with_api_key(
         "POST", V1Routes.REGIONS, region_create.model_dump_json()
     )
@@ -30,7 +36,10 @@ def create_region(
 
 
 @regions_app.command("get")
-def get_region(region_id: str = Argument(..., help="The ID of the region to get.")):
+def get_region(region_id: Optional[str] = Argument(None, help="The ID of the region to get.")):
+    if not region_id:
+        region_id = prompt("Enter the ID of the region to get")
+        
     response = make_request_with_api_key("GET", f"{V1Routes.REGIONS}/{region_id}")
 
     json_response = response.json()
@@ -61,11 +70,16 @@ def list_regions():
 @regions_app.command("update")
 def update_region(
     region_id: str = Argument(..., help="The ID of the region to update."),
-    config_file: str = Option(
-        ..., help="The path to a JSON file with the region update data."
-    ),
+    config_file: Optional[str] = Option(
+        None, help="The path to a JSON file with the region update data."
+    )
 ):
-    region_update = parse_config_file(config_file, RegionUpdate)
+    if config_file:
+        region_update = parse_config_file(config_file, RegionUpdate)
+    else:
+        name = prompt("Enter the updated name of the region", default=None)
+        region_update = RegionUpdate(name=name)
+
     response = make_request_with_api_key(
         "PATCH", f"{V1Routes.REGIONS}/{region_id}", region_update.model_dump_json()
     )
@@ -79,9 +93,10 @@ def update_region(
 
 
 @regions_app.command("delete")
-def delete_region(
-    region_id: str = Argument(..., help="The ID of the region to delete.")
-):
+def delete_region(region_id: Optional[str] = Argument(None, help="The ID of the region to delete.")):
+    if not region_id:
+        region_id = prompt("Enter the ID of the region to delete")
+        
     response = make_request_with_api_key("DELETE", f"{V1Routes.REGIONS}/{region_id}")
 
     if response.status_code == 204:
