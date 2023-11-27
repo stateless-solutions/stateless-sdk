@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.table import Table
 from cli.routes import V1Routes
 from cli.utils import make_request_with_api_key, parse_config_file
-from datetime import datetime
+from datetime import datetime, timedelta
 from cli.models.api_keys import APIKeyUpdate, APIKeyCreate
 
 console = Console()
@@ -17,26 +17,21 @@ def create_api_key(
         None,
         "--config-file",
         "-c",
-        help="The path to a JSON file with the user creation data.",
+        help="The path to a JSON file with the API key creation data.",
     ),
 ):
     if config_file:
         api_key_create = parse_config_file(config_file, APIKeyCreate)
     else:
-        # Interactive Prompts for API Key Creation
         account_id = prompt("Enter the account ID", type=str, default=None)
         name = prompt("Enter the name of the API key")
-        prefix = prompt("Enter the prefix of the API key", default=None)
-        expires_at = prompt(
-            "Enter the expiration datetime of the API key (YYYY-MM-DD HH:MM:SS)",
-            default=None,
-        )
-        expires_at = (
-            datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S") if expires_at else None
-        )
-
+        expiration_days = prompt("Enter the number of days until expiration", type=int, default=30)
+        
+        expiration_date = datetime.now() + timedelta(days=expiration_days)
+        expires_at = expiration_date.strftime("%Y-%m-%d %H:%M:%S")
+        
         api_key_create = APIKeyCreate(
-            account_id=account_id, name=name, prefix=prefix, expires_at=expires_at
+            account_id=account_id, name=name, expires_at=expires_at
         )
 
     response = make_request_with_api_key(
@@ -69,18 +64,13 @@ def update_api_key(
     if config_file:
         api_key_update = parse_config_file(config_file, APIKeyUpdate)
     else:
-        # Interactive Prompts for API Key Update
         name = prompt("Enter the updated name of the API key", default=None)
-        prefix = prompt("Enter the updated prefix of the API key", default=None)
-        expires_at = prompt(
-            "Enter the updated expiration datetime of the API key (YYYY-MM-DD HH:MM:SS)",
-            default=None,
-        )
-        expires_at = (
-            datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S") if expires_at else None
-        )
+        expiration_days = prompt("Enter the number of days until expiration", type=int, default=30)
+        
+        expiration_date = datetime.now() + timedelta(days=expiration_days)
+        expires_at = expiration_date.strftime("%Y-%m-%d %H:%M:%S")
 
-        api_key_update = APIKeyUpdate(name=name, prefix=prefix, expires_at=expires_at)
+        api_key_update = APIKeyUpdate(name=name, expires_at=expires_at)
 
     response = make_request_with_api_key(
         "PATCH", f"{V1Routes.API_KEYS}/{api_key_id}", api_key_update.model_dump_json()
