@@ -1,8 +1,10 @@
-from typer import Typer, Option, Argument
+from typer import Typer, Option, Argument, prompt
+from typing import Optional
 from rich.console import Console
 from rich.table import Table
 from cli.routes import V1Routes
 from cli.utils import make_request_with_api_key, parse_config_file
+from datetime import datetime
 from cli.models.api_keys import APIKeyUpdate, APIKeyCreate
 
 console = Console()
@@ -10,12 +12,19 @@ api_keys_app = Typer()
 
 
 @api_keys_app.command("create")
-def create_api_key(
-    config_file: str = Option(
-        ..., help="The path to a JSON file with the API key creation data."
-    )
-):
-    api_key_create = parse_config_file(config_file, APIKeyCreate)
+def create_api_key(config_file: Optional[str] = Option(None, help="The path to a JSON file with the API key creation data.")):
+    if config_file:
+        api_key_create = parse_config_file(config_file, APIKeyCreate)
+    else:
+        # Interactive Prompts for API Key Creation
+        account_id = prompt("Enter the account ID", type=str, default=None)
+        name = prompt("Enter the name of the API key")
+        prefix = prompt("Enter the prefix of the API key", default=None)
+        expires_at = prompt("Enter the expiration datetime of the API key (YYYY-MM-DD HH:MM:SS)", default=None)
+        expires_at = datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S") if expires_at else None
+
+        api_key_create = APIKeyCreate(account_id=account_id, name=name, prefix=prefix, expires_at=expires_at)
+        
     response = make_request_with_api_key(
         "POST", V1Routes.API_KEYS, api_key_create.model_dump_json()
     )
@@ -30,12 +39,23 @@ def create_api_key(
 
 @api_keys_app.command("update")
 def update_api_key(
-    api_key_id: str = Argument(..., help="The UUID of the API key to update."),
-    config_file: str = Option(
-        ..., help="The path to a JSON file with the update data."
-    ),
+    api_key_id: Optional[str] = Argument(None, help="The UUID of the API key to update."),
+    config_file: Optional[str] = Option(None, help="The path to a JSON file with the update data.")
 ):
-    api_key_update = parse_config_file(config_file, APIKeyUpdate)
+    if not api_key_id:
+        api_key_id = prompt("Enter the UUID of the API key to update")
+
+    if config_file:
+        api_key_update = parse_config_file(config_file, APIKeyUpdate)
+    else:
+        # Interactive Prompts for API Key Update
+        name = prompt("Enter the updated name of the API key", default=None)
+        prefix = prompt("Enter the updated prefix of the API key", default=None)
+        expires_at = prompt("Enter the updated expiration datetime of the API key (YYYY-MM-DD HH:MM:SS)", default=None)
+        expires_at = datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S") if expires_at else None
+
+        api_key_update = APIKeyUpdate(name=name, prefix=prefix, expires_at=expires_at)
+        
     response = make_request_with_api_key(
         "PATCH", f"{V1Routes.API_KEYS}/{api_key_id}", api_key_update.model_dump_json()
     )
@@ -49,9 +69,10 @@ def update_api_key(
 
 
 @api_keys_app.command("get")
-def get_api_key(
-    api_key_id: str = Argument(..., help="The UUID of the API key to get.")
-):
+def get_api_key(api_key_id: Optional[str] = Argument(None, help="The UUID of the API key to get.")):
+    if not api_key_id:
+        api_key_id = prompt("Enter the UUID of the API key to get")
+        
     response = make_request_with_api_key("GET", f"{V1Routes.API_KEYS}/{api_key_id}")
 
     json_response = response.json()
@@ -78,9 +99,10 @@ def list_api_keys():
 
 
 @api_keys_app.command("delete")
-def delete_api_key(
-    api_key_id: str = Argument(..., help="The UUID of the API key to delete.")
-):
+def delete_api_key(api_key_id: Optional[str] = Argument(None, help="The UUID of the API key to delete.")):
+    if not api_key_id:
+        api_key_id = prompt("Enter the UUID of the API key to delete")
+        
     response = make_request_with_api_key("DELETE", f"{V1Routes.API_KEYS}/{api_key_id}")
 
     if response.status_code == 204:
