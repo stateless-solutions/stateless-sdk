@@ -64,7 +64,7 @@ def get_api_key(
 
 @api_keys_app.command("list")
 def list_api_keys():
-    response = make_request_with_api_key("GET", V1Routes.API_KEYS)
+    response = make_request_with_api_key("GET", V1Routes.LIST_API_KEYS)
     json_response = response.json()
 
     table = Table(show_header=True, header_style="green")

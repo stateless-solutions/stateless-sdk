@@ -20,4 +20,4 @@ python main.py entrypoints create --config-file ./examples/entrypoint_config.jso
 python main.py buckets create --config-file ./examples/bucket_config.json
 
 # Add offering to previously created bucket using a regular API Key
-python main.py buckets update --config-file ./examples/bucket_update_config.json f4853c7a-55be-4c22-a1d6-82e213da6e74
+python main.py buckets update --config-file ./examples/bucket_update_config.json d822fdb9-4759-4d4a-b510-23e46107c0a8
