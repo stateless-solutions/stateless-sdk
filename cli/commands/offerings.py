@@ -1,5 +1,5 @@
-from typing_extensions import Annotated
-from typer import Typer, Option, Argument
+from typing import Optional
+from typer import Typer, Option, Argument, prompt
 from rich.console import Console
 from rich.table import Table
 
@@ -13,7 +13,10 @@ offerings_app = Typer()
 
 
 @offerings_app.command("detail")
-def offerings(id: Annotated[str, Argument()]):
+def offerings_detail(id: Optional[str] = Argument(None)):
+    if not id:
+        id = prompt("Enter the ID of the offering to get details")
+        
     response = make_request_with_api_key("GET", f"{V1Routes.OFFERINGS}/{id}")
 
     if response.status_code == 404:
@@ -59,8 +62,15 @@ def offerings_list():
 
 
 @offerings_app.command("create")
-def offerings_create(config_file: str = Option()):
-    offering_create = parse_config_file(config_file, OfferingCreate)
+def offerings_create(config_file: Optional[str] = Option(None)):
+    if config_file:
+        offering_create = parse_config_file(config_file, OfferingCreate)
+    else:
+        chain_id = prompt("Enter the ID of the chain for the offering", type=int)
+        provider_id = prompt("Enter the ID of the provider for the offering", type=str)
+
+        offering_create = OfferingCreate(chain_id=chain_id, provider_id=provider_id)
+        
     response = make_request_with_api_key(
         "POST", V1Routes.OFFERINGS, offering_create.model_dump_json()
     )
@@ -75,12 +85,21 @@ def offerings_create(config_file: str = Option()):
 
 @offerings_app.command("update")
 def offerings_update(
-    offering_id: str = Argument(..., help="The UUID of the offering to update."),
-    config_file: str = Option(
-        ..., help="The path to a JSON file with the update data."
-    ),
+    offering_id: Optional[str] = Argument(None, help="The UUID of the offering to update."),
+    config_file: Optional[str] = Option(None, help="The path to a JSON file with the update data.")
 ):
-    offering_update = parse_config_file(config_file, OfferingUpdate)
+    if not offering_id:
+        offering_id = prompt("Enter the UUID of the offering to update")
+
+    if config_file:
+        offering_update = parse_config_file(config_file, OfferingUpdate)
+    else:
+        # Interactive Prompts for Offering Update
+        chain_id = prompt("Enter the updated ID of the chain for the offering", type=int, default=None)
+        provider_id = prompt("Enter the updated ID of the provider for the offering", type=str, default=None)
+
+        offering_update = OfferingUpdate(chain_id=chain_id, provider_id=provider_id)
+        
     response = make_request_with_api_key(
         "PATCH",
         f"{V1Routes.OFFERINGS}/{offering_id}",
@@ -96,9 +115,10 @@ def offerings_update(
 
 
 @offerings_app.command("delete")
-def offerings_delete(
-    offering_id: str = Argument(..., help="The UUID of the offering to delete.")
-):
+def offerings_delete(offering_id: Optional[str] = Argument(None, help="The UUID of the offering to delete.")):
+    if not offering_id:
+        offering_id = prompt("Enter the UUID of the offering to delete")
+        
     response = make_request_with_api_key(
         "DELETE", f"{V1Routes.OFFERINGS}/{offering_id}"
     )
