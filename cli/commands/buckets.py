@@ -1,5 +1,6 @@
 import ujson
-from typer import Typer, Option, Argument
+from typer import Typer, Option, Argument, prompt
+from typing import Optional
 from rich.console import Console
 from rich.table import Table
 
@@ -36,8 +37,19 @@ def buckets_list():
 
 
 @buckets_app.command("create")
-def buckets_create(config_file: str = Option()):
-    bucket_create = parse_config_file(config_file, BucketCreate)
+def buckets_create(config_file: Optional[str] = Option(None)):
+    if config_file:
+        bucket_create = parse_config_file(config_file, BucketCreate)
+    else:
+        # Interactive Prompts for Bucket Creation
+        user_id = prompt("Enter the user ID, can only be set by admins", default=None)
+        name = prompt("Enter the name of the bucket")
+        chain_id = prompt("Enter the ID of the associated chain", type=int)
+        offerings = prompt("Enter a list of offerings UUIDs to associate with the bucket (comma-separated)", default="")
+
+        offerings_list = offerings.split(",") if offerings else []
+        bucket_create = BucketCreate(user_id=user_id, name=name, chain_id=chain_id, offerings=offerings_list)
+
     response = make_request_with_api_key(
         "POST", V1Routes.BUCKETS, bucket_create.model_dump_json()
     )
@@ -52,12 +64,22 @@ def buckets_create(config_file: str = Option()):
 
 @buckets_app.command("update")
 def buckets_update(
-    bucket_id: str = Argument(..., help="The UUID of the bucket to update."),
-    config_file: str = Option(
-        ..., help="The path to a JSON file with the update data."
-    ),
+    bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to update."),
+    config_file: Optional[str] = Option(None, help="The path to a JSON file with the update data.")
 ):
-    bucket_update = parse_config_file(config_file, BucketUpdate)
+    if not bucket_id:
+        bucket_id = prompt("Enter the UUID of the bucket to update")
+
+    if config_file:
+        bucket_update = parse_config_file(config_file, BucketUpdate)
+    else:
+        # Interactive Prompts for Bucket Update
+        name = prompt("Enter the updated name of the bucket", default=None)
+        offerings = prompt("Enter the updated list of offerings UUIDs to associate with the bucket (comma-separated)", default=None)
+
+        offerings_list = offerings.split(",") if offerings else None
+        bucket_update = BucketUpdate(name=name, offerings=offerings_list)
+        
     response = make_request_with_api_key(
         "PATCH", f"{V1Routes.BUCKETS}/{bucket_id}", bucket_update.model_dump_json()
     )
@@ -71,7 +93,10 @@ def buckets_update(
 
 
 @buckets_app.command("get")
-def buckets_get(bucket_id: str = Argument(..., help="The UUID of the bucket to get.")):
+def buckets_get(bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to get.")):
+    if not bucket_id:
+        bucket_id = prompt("Enter the UUID of the bucket to get")
+        
     response = make_request_with_api_key("GET", f"{V1Routes.BUCKETS}/{bucket_id}")
 
     json_response = response.json()
@@ -83,9 +108,10 @@ def buckets_get(bucket_id: str = Argument(..., help="The UUID of the bucket to g
 
 
 @buckets_app.command("delete")
-def buckets_delete(
-    bucket_id: str = Argument(..., help="The UUID of the bucket to delete.")
-):
+def buckets_delete(bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to delete.")):
+    if not bucket_id:
+        bucket_id = prompt("Enter the UUID of the bucket to delete")
+        
     response = make_request_with_api_key("DELETE", f"{V1Routes.BUCKETS}/{bucket_id}")
 
     if response.status_code == 204:
