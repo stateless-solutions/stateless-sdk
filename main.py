@@ -10,7 +10,8 @@ from cli.commands.users import users_app
 from cli.commands.providers import providers_app
 from cli.commands.chains import chains_app
 from cli.commands.regions import regions_app
-from cli.utils import get_api_key_from_env
+from cli.routes import V1Routes
+from cli.utils import get_api_key_from_env, make_request_with_api_key, clear_console
 
 app = Typer()
 app.add_typer(offerings_app, name="offerings")
@@ -39,8 +40,6 @@ def main(ctx: Context):
         # ASCII Art Logo
         secho(ascii_art, fg="green")
 
-        secho("Welcome to the Stateless CLI!", fg="blue")
-
         while True:
             has_api_key = confirm("Do you have an API key to proceed?")
 
@@ -56,7 +55,18 @@ def main(ctx: Context):
                         "Please set your API key in the environment variable STATELESS_API_KEY."
                     )
                 else:
-                    secho("API key found! Feel free to use commands now!", fg="green")
+                    response = make_request_with_api_key("GET", V1Routes.ACCOUNT_PROFILE)
+                    json_response = response.json()
+                    
+                    if response.status_code == 200:
+                        name: str  = json_response['name']
+                        account_type: str = json_response['account_type']
+                        secho(f"Welcome, {name}!", fg="green")
+                        secho("You are logged in as a: ", nl=False)
+                        secho(f"{account_type.capitalize()}", fg="blue")
+                        secho("Explore our commands by running `stateless-cli --help`", fg="green")
+                    else:
+                        secho(f"Error getting account profile: {json_response['detail']}", fg="red")
 
                 break
 

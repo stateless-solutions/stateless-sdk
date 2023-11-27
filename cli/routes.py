@@ -3,6 +3,8 @@ class BaseUrl:
 
 
 class V1Routes:
+    ACCOUNT_PROFILE = BaseUrl.V1 + "/accounts/profile"
+    
     USERS = BaseUrl.V1 + "/users"
     LIST_USERS = USERS + "/list"
     CURRENT_USER = USERS + "/current"

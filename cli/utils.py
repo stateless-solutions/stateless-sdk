@@ -1,5 +1,8 @@
 from typing import Type
 
+import os
+import platform
+
 import httpx
 import ujson
 from pydantic import BaseModel, ValidationError
@@ -68,3 +71,11 @@ def handle_response(response: httpx.Response, success_message, error_message):
     else:
         console.print(f"{error_message}: {json_response['detail']}")
         raise Exit(1)  # Exit with an error status
+
+def clear_console():
+    system_platform = platform.system()
+    
+    if system_platform == "Windows":
+        os.system("cls")
+    else:
+        os.system("clear")
