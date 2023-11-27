@@ -1,4 +1,5 @@
-from typer import Typer, Option, Argument
+from typing import Optional
+from typer import Typer, Option, Argument, prompt
 from rich.console import Console
 from rich.table import Table
 from cli.routes import V1Routes
@@ -12,15 +13,26 @@ users_app = Typer()
 
 @users_app.command("create")
 def create_user(
-    config_file: str = Option(
-        ..., help="The path to a JSON file with the user creation data."
+    config_file: Optional[str] = Option(
+        None, help="The path to a JSON file with the user creation data."
     )
 ):
-    user_create = parse_config_file(config_file, UserCreate)
+    if config_file:
+        user_create = parse_config_file(config_file, UserCreate)
+    else:
+        oauth_id = prompt("Enter OAuth2 Unique Identifier")
+        status = prompt("Enter Account Status", default="active")
+        email = prompt("Enter Email Address", default=None)
+        name = prompt("Enter Name", default=None)
+        username = prompt("Enter Username")
+
+        user_create = UserCreate(
+            oauth_id=oauth_id, status=status, email=email, name=name, username=username
+        )
+
     response = make_request_with_api_key(
         "POST", V1Routes.USERS, user_create.model_dump_json()
     )
-
     json_response = response.json()
 
     if response.status_code == 201:
@@ -41,7 +53,10 @@ def get_current_user():
 
 
 @users_app.command("get")
-def get_user(user_id: str = Argument(..., help="The ID of the user to get.")):
+def get_user(user_id: Optional[str] = Argument(None, help="The ID of the user to get.")):
+    if not user_id:
+        user_id = prompt("Enter the ID of the user to get")
+        
     response = make_request_with_api_key("GET", f"{V1Routes.USERS}/{user_id}")
     json_response = response.json()
 
@@ -60,16 +75,18 @@ def list_users():
     table = Table(show_header=True, header_style="green")
     table.add_column("ID")
     table.add_column("Name")
-    # Add more columns as needed
 
     for item in json_response["items"]:
-        table.add_row(item["id"], item["name"])  # Add more columns as needed
+        table.add_row(item["id"], item["name"])
 
     console.print(table)
 
 
 @users_app.command("delete")
-def delete_user(user_id: str = Argument(..., help="The ID of the user to delete.")):
+def delete_user(user_id: Optional[str] = Argument(None, help="The ID of the user to delete.")):
+    if not user_id:
+        user_id = prompt("Enter the ID of the user to delete")
+    
     response = make_request_with_api_key("DELETE", f"{V1Routes.USERS}/{user_id}")
 
     if response.status_code == 204:
