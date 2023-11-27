@@ -36,17 +36,27 @@ def entrypoint_list():
 
 
 @entrypoints_app.command("create")
-def entrypoint_create(config_file: Optional[str] = Option(None)):
+def entrypoint_create(
+    config_file: Optional[str] = Option(
+        None,
+        "--config-file",
+        "-c",
+    ),
+):
     if config_file:
         entrypoint_create = parse_config_file(config_file, EntrypointCreate)
     else:
         # Interactive Prompts for Entrypoint Creation
         url = prompt("Enter the URL of the entrypoint")
-        offering_id = prompt("Enter the ID of the offering for the entrypoint", type=str)
+        offering_id = prompt(
+            "Enter the ID of the offering for the entrypoint", type=str
+        )
         region_id = prompt("Enter the ID of the region for the entrypoint", type=str)
 
-        entrypoint_create = EntrypointCreate(url=url, offering_id=offering_id, region_id=region_id)
-        
+        entrypoint_create = EntrypointCreate(
+            url=url, offering_id=offering_id, region_id=region_id
+        )
+
     response = make_request_with_api_key(
         "POST", V1Routes.ENTRYPOINTS, entrypoint_create.model_dump_json()
     )
@@ -62,10 +72,14 @@ def entrypoint_create(config_file: Optional[str] = Option(None)):
 
 
 @entrypoints_app.command("get")
-def entrypoint_get(entrypoint_id: Optional[str] = Argument(None, help="The UUID of the entrypoint to get.")):
+def entrypoint_get(
+    entrypoint_id: Optional[str] = Argument(
+        None, help="The UUID of the entrypoint to get."
+    ),
+):
     if not entrypoint_id:
         entrypoint_id = prompt("Enter the UUID of the entrypoint to get")
-        
+
     response = make_request_with_api_key(
         "GET", f"{V1Routes.ENTRYPOINTS}/{entrypoint_id}"
     )
@@ -80,8 +94,15 @@ def entrypoint_get(entrypoint_id: Optional[str] = Argument(None, help="The UUID 
 
 @entrypoints_app.command("update")
 def entrypoint_update(
-    entrypoint_id: Optional[str] = Argument(None, help="The UUID of the entrypoint to update."),
-    config_file: Optional[str] = Option(None, help="The path to a JSON file with the update data.")
+    entrypoint_id: Optional[str] = Argument(
+        None, help="The UUID of the entrypoint to update."
+    ),
+    config_file: Optional[str] = Option(
+        None,
+        "--config-file",
+        "-c",
+        help="The path to a JSON file with the update data.",
+    ),
 ):
     if not entrypoint_id:
         entrypoint_id = prompt("Enter the UUID of the entrypoint to update")
@@ -108,10 +129,14 @@ def entrypoint_update(
 
 
 @entrypoints_app.command("delete")
-def entrypoint_delete(entrypoint_id: Optional[str] = Argument(None, help="The UUID of the entrypoint to delete.")):
+def entrypoint_delete(
+    entrypoint_id: Optional[str] = Argument(
+        None, help="The UUID of the entrypoint to delete."
+    ),
+):
     if not entrypoint_id:
         entrypoint_id = prompt("Enter the UUID of the entrypoint to delete")
-        
+
     response = make_request_with_api_key(
         "DELETE", f"{V1Routes.ENTRYPOINTS}/{entrypoint_id}"
     )

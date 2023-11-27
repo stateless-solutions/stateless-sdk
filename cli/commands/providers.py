@@ -14,8 +14,11 @@ providers_app = Typer()
 @providers_app.command("create")
 def create_provider(
     config_file: Optional[str] = Option(
-        None, help="The path to a JSON file with the provider creation data."
-    )
+        None,
+        "--config-file",
+        "-c",
+        help="The path to a JSON file with the provider creation data.",
+    ),
 ):
     if config_file:
         provider_create = parse_config_file(config_file, ProviderCreate)
@@ -28,10 +31,14 @@ def create_provider(
         payment_address = prompt("Enter Payment Address", default=None)
 
         provider_create = ProviderCreate(
-            oauth_id=oauth_id, status=status, email=email, name=name, 
-            username=username, payment_address=payment_address
+            oauth_id=oauth_id,
+            status=status,
+            email=email,
+            name=name,
+            username=username,
+            payment_address=payment_address,
         )
-        
+
     response = make_request_with_api_key(
         "POST", V1Routes.PROVIDERS, provider_create.model_dump_json()
     )
@@ -45,10 +52,12 @@ def create_provider(
 
 
 @providers_app.command("get")
-def get_provider(provider_id: Optional[str] = Argument(None, help="The ID of the provider to get.")):
+def get_provider(
+    provider_id: Optional[str] = Argument(None, help="The ID of the provider to get.")
+):
     if not provider_id:
         provider_id = prompt("Enter the ID of the provider to get")
-        
+
     response = make_request_with_api_key("GET", f"{V1Routes.PROVIDERS}/{provider_id}")
 
     json_response = response.json()
@@ -76,10 +85,14 @@ def list_providers():
 
 
 @providers_app.command("delete")
-def delete_provider(provider_id: Optional[str] = Argument(None, help="The ID of the provider to delete.")):
+def delete_provider(
+    provider_id: Optional[str] = Argument(
+        None, help="The ID of the provider to delete."
+    ),
+):
     if not provider_id:
         provider_id = prompt("Enter the ID of the provider to delete")
-        
+
     response = make_request_with_api_key(
         "DELETE", f"{V1Routes.PROVIDERS}/{provider_id}"
     )

@@ -1,6 +1,6 @@
 import webbrowser
 import time
-from typer import Typer, secho, confirm
+from typer import Typer, secho, confirm, Context
 
 from cli.commands.offerings import offerings_app
 from cli.commands.entrypoints import entrypoints_app
@@ -33,32 +33,32 @@ ascii_art = r"""
 """  # noqa: W291
 
 
-@app.command("setup")
-def main():
-    # ASCII Art Logo
-    secho(ascii_art, fg="green")
+@app.callback(invoke_without_command=True)
+def main(ctx: Context):
+    if ctx.invoked_subcommand is None:
+        # ASCII Art Logo
+        secho(ascii_art, fg="green")
 
-    secho("Welcome to the Stateless CLI!", fg="blue")
+        secho("Welcome to the Stateless CLI!", fg="blue")
 
-    while True:
-        has_api_key = confirm("Do you have an API key to proceed?")
+        while True:
+            has_api_key = confirm("Do you have an API key to proceed?")
 
-        if not has_api_key:
-            secho("Redirecting to the API key registration page...", fg="red")
-            webbrowser.open("https://app.stateless.solutions")
-            secho("Waiting for a few seconds before asking again...", fg="yellow")
-            time.sleep(5)
-        else:
-            api_key = get_api_key_from_env()
-            if not api_key:
-                secho(
-                    "Please set your API key in the environment variable STATELESS_API_KEY."
-                )
+            if not has_api_key:
+                secho("Redirecting to the API key registration page...", fg="red")
+                webbrowser.open("https://app.stateless.solutions")
+                secho("Waiting for a few seconds before asking again...", fg="yellow")
+                time.sleep(5)
             else:
-                secho("API key found! Feel free to use commands now!", fg="green")
+                api_key = get_api_key_from_env()
+                if not api_key:
+                    secho(
+                        "Please set your API key in the environment variable STATELESS_API_KEY."
+                    )
+                else:
+                    secho("API key found! Feel free to use commands now!", fg="green")
 
-            break
-
+                break
 
 if __name__ == "__main__":
     app()
