@@ -22,23 +22,23 @@ def create_chain(
     if config_file:
         chain_create = parse_config_file(config_file, ChainCreate)
     else:
-        # Interactive Prompts for Chain Creation
         chain_id = prompt("Enter the ID of the chain", type=int)
         name = prompt("Enter the name of the chain")
 
         chain_create = ChainCreate(chain_id=chain_id, name=name)
 
-    response = make_request_with_api_key(
-        "POST", V1Routes.CHAINS, chain_create.model_dump_json()
-    )
+    try:
+        response = make_request_with_api_key(
+            "POST", V1Routes.CHAINS, chain_create.model_dump_json()
+        )
 
-    json_response = response.json()
+        json_response = response.json()
 
-    if response.status_code == 201:
-        console.print(f"Successfully created chain {json_response['id']}")
-    else:
-        console.print(f"Error creating chain: {json_response['detail']}")
-
+        if response.status_code == 201:
+            console.print(f"Successfully created chain {json_response['id']}")
+            
+    except Exception:
+        return
 
 @chains_app.command("update")
 def update_chain(
@@ -60,16 +60,18 @@ def update_chain(
 
         chain_update = ChainUpdate(name=name)
 
-    response = make_request_with_api_key(
-        "PATCH", f"{V1Routes.CHAINS}/{chain_id}", chain_update.model_dump_json()
-    )
+    try:
+        response = make_request_with_api_key(
+            "PATCH", f"{V1Routes.CHAINS}/{chain_id}", chain_update.model_dump_json()
+        )
 
-    json_response = response.json()
+        json_response = response.json()
 
-    if response.status_code == 200:
-        console.print(f"Successfully updated chain {json_response['id']}")
-    else:
-        console.print(f"Error updating chain: {json_response['detail']}")
+        if response.status_code == 200:
+            console.print(f"Successfully updated chain {json_response['id']}")
+            
+    except Exception:
+        return
 
 
 @chains_app.command("get")
@@ -79,29 +81,37 @@ def get_chain(
     if chain_id is None:
         chain_id = prompt("Enter the ID of the chain to get", type=int)
 
-    response = make_request_with_api_key("GET", f"{V1Routes.CHAINS}/{chain_id}")
+    try:
+        response = make_request_with_api_key("GET", f"{V1Routes.CHAINS}/{chain_id}")
 
-    json_response = response.json()
-
-    if response.status_code == 200:
-        console.print(json_response)  # Display the chain details
-    else:
-        console.print(f"Error getting chain: {json_response['detail']}")
+        json_response = response.json()
+        
+        if response.status_code == 200:
+            table = Table(show_header=True, header_style="green")
+            table.add_column("Chain ID")
+            table.add_column("Name")
+            
+            table.add_row(str(json_response["chain_id"]), json_response["name"])
+            
+            console.print(table)
+        
+    except Exception:
+        return
 
 
 @chains_app.command("list")
 def list_chains():
-    response = make_request_with_api_key("GET", V1Routes.LIST_CHAINS)
+    response = make_request_with_api_key("GET", V1Routes.CHAINS)
 
     json_response = response.json()
 
     table = Table(show_header=True, header_style="green")
-    table.add_column("ID")
+    table.add_column("Chain ID")
     table.add_column("Name")
-    # Add more columns as needed
 
     for item in json_response["items"]:
-        table.add_row(item["id"], item["name"])  # Add more columns as needed
+        print()
+        table.add_row(str(item["chain_id"]), item["name"])
 
     console.print(table)
 
@@ -113,10 +123,11 @@ def delete_chain(
     if chain_id is None:
         chain_id = prompt("Enter the ID of the chain to delete", type=int)
 
-    response = make_request_with_api_key("DELETE", f"{V1Routes.CHAINS}/{chain_id}")
+    try: 
+        response = make_request_with_api_key("DELETE", f"{V1Routes.CHAINS}/{chain_id}")
 
-    if response.status_code == 204:
-        console.print(f"Successfully deleted chain {chain_id}")
-    else:
-        json_response = response.json()
-        console.print(f"Error deleting chain: {json_response['detail']}")
+        if response.status_code == 204:
+            console.print(f"Successfully deleted chain {chain_id}")
+            
+    except Exception:
+        return

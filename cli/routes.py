@@ -22,7 +22,6 @@ class V1Routes:
     LIST_API_KEYS = API_KEYS + "/list"
 
     CHAINS = BaseUrl.V1 + "/chains"
-    LIST_CHAINS = CHAINS + "/list"
 
     PROVIDERS = BaseUrl.V1 + "/providers"
     LIST_PROVIDERS = PROVIDERS + "/list"
