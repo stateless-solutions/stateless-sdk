@@ -1,4 +1,17 @@
-from pydantic import BaseModel, Field
+from datetime import datetime
+
+from pydantic import UUID4, BaseModel, ConfigDict, Field
+
+
+class ChainFullResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID4
+    name: str
+    chain_id: int
+
+    created_at: datetime
+    updated_at: datetime
 
 
 class ChainCreate(BaseModel):

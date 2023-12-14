@@ -1,9 +1,16 @@
+from datetime import datetime
 from typing import Optional
 
 from pydantic import Field
 
-from cli.models.accounts import AccountRegister
+from cli.models.accounts import AccountCreate, AccountFullResponse
 
 
-class ProviderCreate(AccountRegister):
+class ProviderFullResponse(AccountFullResponse):
+    payment_address: str
+    p_created_at: datetime
+    p_updated_at: datetime
+
+
+class ProviderCreate(AccountCreate):
     payment_address: Optional[str] = Field(None, description="Payment Address")

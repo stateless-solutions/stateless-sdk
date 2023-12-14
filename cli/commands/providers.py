@@ -24,7 +24,6 @@ def create_provider(
         provider_create = parse_config_file(config_file, ProviderCreate)
     else:
         oauth_id = prompt("Enter OAuth2 Unique Identifier")
-        status = prompt("Enter Account Status", default="active")
         email = prompt("Enter Email Address", default=None)
         name = prompt("Enter Name", default=None)
         username = prompt("Enter Username")
@@ -32,7 +31,6 @@ def create_provider(
 
         provider_create = ProviderCreate(
             oauth_id=oauth_id,
-            status=status,
             email=email,
             name=name,
             username=username,

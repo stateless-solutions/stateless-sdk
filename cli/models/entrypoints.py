@@ -1,4 +1,22 @@
-from pydantic import UUID4, BaseModel, Field
+from datetime import datetime
+
+from pydantic import UUID4, BaseModel, ConfigDict, Field
+
+
+class EntrypointNoURLResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    offering_id: UUID4
+    region_id: UUID4
+
+    created_at: datetime
+    updated_at: datetime
+
+
+class EntrypointFullResponse(EntrypointNoURLResponse):
+    model_config = ConfigDict(from_attributes=True)
+
+    url: str
 
 
 class EntrypointCreate(BaseModel):

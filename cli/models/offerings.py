@@ -1,12 +1,24 @@
+from datetime import datetime
 from typing import Optional
 
-from pydantic import UUID4, BaseModel, Field
+from pydantic import UUID4, BaseModel, ConfigDict, Field
+
+
+class OfferingFullResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID4
+    chain_id: Optional[int]
+    provider_id: UUID4
+
+    created_at: datetime
+    updated_at: datetime
 
 
 class OfferingCreate(BaseModel):
     chain_id: int = Field(..., description="The ID of the chain for the offering")
     provider_id: Optional[UUID4] = Field(
-        ..., description="The ID of the provider for the offering"
+        None, description="The ID of the provider for the offering"
     )
 
 
