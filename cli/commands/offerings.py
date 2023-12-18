@@ -16,7 +16,14 @@ offerings_app = Typer()
 @offerings_app.command("detail")
 def offerings_detail(id: Optional[str] = Argument(None)):
     if not id:
-        id = prompt("Enter the ID of the offering to get details")
+        questions = [
+            inquirer.Text(
+                "id",
+                message="What's the ID of the offering you want to get details for?",
+            ),
+        ]
+        answers = inquirer.prompt(questions)
+        id = answers["id"]
 
     response = make_request_with_api_key("GET", f"{V1Routes.OFFERINGS}/{id}")
 
@@ -70,7 +77,6 @@ def offerings_create(
         "-c",
     ),
 ):
-
     if config_file:
         offering_create = parse_config_file(config_file, OfferingCreate)
     else:

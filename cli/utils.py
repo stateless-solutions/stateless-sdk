@@ -42,7 +42,7 @@ def make_request_with_api_key(
                 raise ValueError(f"Unsupported method: {method}")
 
         if response.status_code not in (200, 201, 204):
-            console.print(f"Error: {response.json()}")
+            console.print(f"Error: {response.text}")
             response.raise_for_status()
 
         return response
