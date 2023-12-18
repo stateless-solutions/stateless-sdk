@@ -1,38 +1,16 @@
-import ujson
-from typer import Typer, Option, Argument, prompt
 from typing import Optional
-from rich.console import Console
-from rich.table import Table
 
+import inquirer
+import ujson
+from rich.console import Console
+from typer import Argument, Option, Typer
+
+from cli.models.entrypoints import EntrypointCreate, EntrypointUpdate
 from cli.routes import V1Routes
 from cli.utils import make_request_with_api_key, parse_config_file
 
-from cli.models.entrypoints import EntrypointCreate, EntrypointUpdate
-
 console = Console()
 entrypoints_app = Typer()
-
-
-@entrypoints_app.command("list")
-def entrypoint_list():
-    response = make_request_with_api_key("GET", V1Routes.LIST_ENTRYPOINTS)
-    entrypoints = response.json()
-
-    # TODO: fix joined loads so we display provider/chain names instead of IDs
-    table = Table(show_header=True, header_style="green")
-    table.add_column("ID")
-    table.add_column("Region")
-    table.add_column("Provider ID")
-    table.add_column("Chain ID")
-
-    for item in entrypoints["items"]:
-        entrypoint_id = item["id"]
-        region_name = item["region"]["name"]
-        provider_id = item["offering"]["provider_id"]
-        chain_id = item["offering"]["chain_id"]
-        table.add_row(entrypoint_id, region_name, provider_id, str(chain_id))
-
-    console.print(table)
 
 
 @entrypoints_app.command("create")
@@ -46,17 +24,52 @@ def entrypoint_create(
     if config_file:
         entrypoint_create = parse_config_file(config_file, EntrypointCreate)
     else:
-        # Interactive Prompts for Entrypoint Creation
-        url = prompt("Enter the URL of the entrypoint")
-        offering_id = prompt(
-            "Enter the ID of the offering for the entrypoint", type=str
-        )
-        region_id = prompt("Enter the ID of the region for the entrypoint", type=str)
+        response = make_request_with_api_key("GET", V1Routes.LIST_OFFERINGS)
+        json_response = response.json()
+        offerings = []
+        for item in json_response["items"]:
+            offering = (item["chain"]["name"], item["id"])
+            offerings.append(offering)
+
+        response = make_request_with_api_key("GET", V1Routes.REGIONS)
+        json_response = response.json()
+
+        regions = []
+        for item in json_response["items"]:
+            region = (item["name"], item["id"])
+            regions.append(region)
+
+        questions = [
+            inquirer.List(
+                "offering",
+                message="Which offering would you like to create an entrypoint for?",
+                choices=offerings,
+                carousel=True,
+            ),
+            inquirer.List(
+                "region",
+                message="Which region would you like to create an entrypoint in?",
+                choices=regions,
+                carousel=True,
+            ),
+            inquirer.Text(
+                "url",
+                message="What is the URL of the entrypoint?",
+                validate=lambda _, x: x.startswith("https://")
+                or x.startswith("http://"),
+            ),
+        ]
+        answers = inquirer.prompt(questions)
+
+        url = answers["url"]
+        offering_id = answers["offering"]
+        region_id = answers["region"]
 
         entrypoint_create = EntrypointCreate(
             url=url, offering_id=offering_id, region_id=region_id
         )
 
+    print(entrypoint_create.model_dump_json())
     response = make_request_with_api_key(
         "POST", V1Routes.ENTRYPOINTS, entrypoint_create.model_dump_json()
     )
@@ -65,7 +78,7 @@ def entrypoint_create(
 
     if response.status_code == 201:
         console.print(
-            f"Successfully created entrypoint {json_response['id']} with the following URL: {json_response['url']}"
+            f"Successfully created entrypoint with the following URL: {json_response['url']}"
         )
     else:
         console.print(f"Error creating entrypoint: {json_response['detail']}")
@@ -78,7 +91,14 @@ def entrypoint_get(
     ),
 ):
     if not entrypoint_id:
-        entrypoint_id = prompt("Enter the UUID of the entrypoint to get")
+        questions = [
+            inquirer.Text(
+                "entrypoint_id",
+                message="What's the ID of entrypoint you want to obtain?",
+            ),
+        ]
+        answers = inquirer.prompt(questions)
+        entrypoint_id = answers["entrypoint_id"]
 
     response = make_request_with_api_key(
         "GET", f"{V1Routes.ENTRYPOINTS}/{entrypoint_id}"
@@ -105,12 +125,23 @@ def entrypoint_update(
     ),
 ):
     if not entrypoint_id:
-        entrypoint_id = prompt("Enter the UUID of the entrypoint to update")
+        questions = [
+            inquirer.Text(
+                "entrypoint_id",
+                message="What's the ID of the entrypoint you want to update?:",
+            ),
+        ]
+        answers = inquirer.prompt(questions)
+        entrypoint_id = answers["entrypoint_id"]
 
     if config_file:
         entrypoint_update = parse_config_file(config_file, EntrypointUpdate)
     else:
-        url = prompt("Enter the updated URL of the entrypoint", default=None)
+        questions = [
+            inquirer.Text("url", message="What's the new URL of the entrypoint?"),
+        ]
+        answers = inquirer.prompt(questions)
+        url = answers["url"]
 
         entrypoint_update = EntrypointUpdate(url=url)
 
@@ -135,7 +166,14 @@ def entrypoint_delete(
     ),
 ):
     if not entrypoint_id:
-        entrypoint_id = prompt("Enter the UUID of the entrypoint to delete")
+        questions = [
+            inquirer.Text(
+                "entrypoint_id",
+                message="What's the ID of the entrypoint you want to delete?:",
+            ),
+        ]
+        answers = inquirer.prompt(questions)
+        entrypoint_id = answers["entrypoint_id"]
 
     response = make_request_with_api_key(
         "DELETE", f"{V1Routes.ENTRYPOINTS}/{entrypoint_id}"

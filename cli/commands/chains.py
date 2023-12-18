@@ -1,10 +1,12 @@
-from typer import Typer, Option, Argument, prompt
 from typing import Optional
+
 from rich.console import Console
 from rich.table import Table
+from typer import Argument, Option, Typer, prompt
+
+from cli.models.chains import ChainCreate, ChainUpdate
 from cli.routes import V1Routes
 from cli.utils import make_request_with_api_key, parse_config_file
-from cli.models.chains import ChainCreate, ChainUpdate
 
 console = Console()
 chains_app = Typer()

@@ -1,25 +1,22 @@
-from typing import Type
-
 import os
 import platform
+from typing import Type
 
 import httpx
 import ujson
 from pydantic import BaseModel, ValidationError
-
 from rich.console import Console
-from typer import secho, Exit
+from typer import Exit, secho
 
 console = Console()
 
 
 def get_api_key_from_env():
-    import os
-
     api_key = os.environ.get("STATELESS_API_KEY")
     if not api_key:
         secho("API key not found in environment variables!", fg="red")
-        return
+        secho("Please set your API key in the environment variable STATELESS_API_KEY.", fg="red")
+        raise Exit(1)
 
     return api_key
 
@@ -29,26 +26,28 @@ def make_request_with_api_key(
 ) -> httpx.Response:
     api_key = get_api_key_from_env()
     headers = {"X-API-KEY": api_key}
+    try:
+        with httpx.Client() as client:
+            if method == "GET":
+                response = client.get(url, headers=headers)
+            elif method == "POST":
+                response = client.post(url, headers=headers, content=data)
+            elif method == "DELETE":
+                response = client.delete(url, headers=headers)
+            elif method == "PATCH":
+                response = client.patch(url, headers=headers, content=data)
+            elif method == "PUT":
+                response = client.put(url, headers=headers, content=data)
+            else:
+                raise ValueError(f"Unsupported method: {method}")
 
-    with httpx.Client() as client:
-        if method == "GET":
-            response = client.get(url, headers=headers)
-        elif method == "POST":
-            response = client.post(url, headers=headers, content=data)
-        elif method == "DELETE":
-            response = client.delete(url, headers=headers)
-        elif method == "PATCH":
-            response = client.patch(url, headers=headers, content=data)
-        elif method == "PUT":
-            response = client.put(url, headers=headers, content=data)
-        else:
-            raise ValueError(f"Unsupported method: {method}")
+        if response.status_code not in (200, 201, 204):
+            console.print(f"Error: {response.json()}")
+            response.raise_for_status()
 
-    if response.status_code not in (200, 201, 204):
-        console.print(f"Error: {response.json()}")
-        response.raise_for_status()
-
-    return response
+        return response
+    except httpx.HTTPError:
+        raise Exit(1)
 
 
 def parse_config_file(file_path: str, model: Type[BaseModel]) -> Type[BaseModel]:
@@ -72,9 +71,10 @@ def handle_response(response: httpx.Response, success_message, error_message):
         console.print(f"{error_message}: {json_response['detail']}")
         raise Exit(1)  # Exit with an error status
 
+
 def clear_console():
     system_platform = platform.system()
-    
+
     if system_platform == "Windows":
         os.system("cls")
     else:

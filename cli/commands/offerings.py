@@ -1,12 +1,13 @@
 from typing import Optional
-from typer import Typer, Option, Argument, prompt
+
+import inquirer
 from rich.console import Console
 from rich.table import Table
-
-from cli.routes import V1Routes
-from cli.utils import make_request_with_api_key, parse_config_file
+from typer import Argument, Option, Typer, prompt
 
 from cli.models.offerings import OfferingCreate, OfferingUpdate
+from cli.routes import V1Routes
+from cli.utils import make_request_with_api_key, parse_config_file
 
 console = Console()
 offerings_app = Typer()
@@ -69,13 +70,29 @@ def offerings_create(
         "-c",
     ),
 ):
+
     if config_file:
         offering_create = parse_config_file(config_file, OfferingCreate)
     else:
-        chain_id = prompt("Enter the ID of the chain for the offering", type=int)
-        provider_id = prompt("Enter the ID of the provider for the offering", type=str)
+        response = make_request_with_api_key("GET", V1Routes.CHAINS)
 
-        offering_create = OfferingCreate(chain_id=chain_id, provider_id=provider_id)
+        chains = []
+        json_response = response.json()
+        for item in json_response["items"]:
+            chain = (str(item["name"]), str(item["chain_id"]))
+            chains.append(chain)
+
+        questions = [
+            inquirer.List(
+                "chain",
+                message="What is the target blockchain platform for this offering?",
+                choices=chains,
+                carousel=True,
+            ),
+        ]
+        answers = inquirer.prompt(questions)
+        chain_id = answers["chain"]
+        offering_create = OfferingCreate(chain_id=chain_id)
 
     response = make_request_with_api_key(
         "POST", V1Routes.OFFERINGS, offering_create.model_dump_json()
@@ -107,7 +124,6 @@ def offerings_update(
     if config_file:
         offering_update = parse_config_file(config_file, OfferingUpdate)
     else:
-        # Interactive Prompts for Offering Update
         chain_id = prompt(
             "Enter the updated ID of the chain for the offering", type=int, default=None
         )
