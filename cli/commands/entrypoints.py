@@ -3,6 +3,7 @@ from typing import Optional
 import inquirer
 import ujson
 from rich.console import Console
+from rich.table import Table
 from typer import Argument, Option, Typer
 
 from cli.models.entrypoints import EntrypointCreate, EntrypointUpdate
@@ -128,7 +129,7 @@ def entrypoint_update(
         questions = [
             inquirer.Text(
                 "entrypoint_id",
-                message="What's the ID of the entrypoint you want to update?:",
+                message="What's the ID of the entrypoint you want to update?",
             ),
         ]
         answers = inquirer.prompt(questions)
@@ -169,7 +170,7 @@ def entrypoint_delete(
         questions = [
             inquirer.Text(
                 "entrypoint_id",
-                message="What's the ID of the entrypoint you want to delete?:",
+                message="What's the ID of the entrypoint you want to delete?",
             ),
         ]
         answers = inquirer.prompt(questions)
@@ -184,3 +185,53 @@ def entrypoint_delete(
     else:
         json_response = response.json()
         console.print(f"Error deleting entrypoint: {json_response['detail']}")
+
+
+@entrypoints_app.command("list")
+def entrypoint_list(
+    offering_id: Optional[str] = Argument(
+        None, help="The UUID of the offering to list entrypoints for."
+    ),
+):
+    if not offering_id:
+        response = make_request_with_api_key("GET", V1Routes.LIST_OFFERINGS)
+        json_response = response.json()
+
+        offerings = []
+        for item in json_response["items"]:
+            offering = (
+                f"{item['chain']['name']} - {item['provider']['name']}",
+                item["id"],
+            )
+            offerings.append(offering)
+        questions = [
+            inquirer.List(
+                "offering",
+                message="Which offering would you like to list entrypoints for?",
+                choices=offerings,
+                carousel=True,
+            ),
+        ]
+        answers = inquirer.prompt(questions)
+        offering_id = answers["offering"]
+
+    response = make_request_with_api_key("GET", f"{V1Routes.OFFERINGS}/{offering_id}")
+    json_response = response.json()
+
+    if response.status_code == 200:
+        table = Table(show_header=True, header_style="green")
+        table.add_column("Entrypoint ID")
+        table.add_column("URL")
+        table.add_column("Region")
+
+        console.print(
+            f"Listing entrypoints for offering: {json_response['chain']['name']} - {json_response['provider']['name']} - {offering_id}"
+        )
+        for entrypoint in json_response["entrypoints"]:
+            url = entrypoint["url"] if "url" in entrypoint else "Redacted :)"
+            table.add_row(str(entrypoint["id"]), url, entrypoint["region"]["name"])
+
+        console.print(table)
+
+    else:
+        console.print(f"Error listing entrypoints: {json_response['detail']}")
