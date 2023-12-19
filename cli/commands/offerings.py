@@ -3,7 +3,7 @@ from typing import Optional
 import inquirer
 from rich.console import Console
 from rich.table import Table
-from typer import Argument, Option, Typer, prompt
+from typer import Argument, Option, Typer
 
 from cli.models.offerings import OfferingCreate, OfferingUpdate
 from cli.routes import V1Routes
@@ -16,36 +16,52 @@ offerings_app = Typer()
 @offerings_app.command("detail")
 def offerings_detail(id: Optional[str] = Argument(None)):
     if not id:
+        response = make_request_with_api_key("GET", V1Routes.LIST_OFFERINGS)
+        json_response = response.json()
+
+        offerings = []
+        for item in json_response["items"]:
+            offering = (
+                f"{item['chain']['name']} - {item['provider']['name']}",
+                item["id"],
+            )
+            offerings.append(offering)
         questions = [
-            inquirer.Text(
-                "id",
-                message="What's the ID of the offering you want to get details for?",
+            inquirer.List(
+                "offering",
+                message="Which offering would you like to list entrypoints for?",
+                choices=offerings,
+                carousel=True,
             ),
         ]
         answers = inquirer.prompt(questions)
-        id = answers["id"]
+        offering_id = answers["offering"]
 
-    response = make_request_with_api_key("GET", f"{V1Routes.OFFERINGS}/{id}")
+    response = make_request_with_api_key("GET", f"{V1Routes.OFFERINGS}/{offering_id}")
 
     if response.status_code == 404:
         console.print("Offering not found")
 
-    table = Table(show_header=True, header_style="green")
-    table.add_column("ID")
-    table.add_column("Provider")
-    table.add_column("Chain")
-    table.add_column("Entrypoints")
+    if response.status_code == 200:
+        table = Table(show_header=True, header_style="green")
+        table.add_column("ID")
+        table.add_column("Provider")
+        table.add_column("Chain")
+        table.add_column("Entrypoints")
 
-    offering = response.json()
+        offering = response.json()
 
-    offering_id = offering["id"]
-    provider_name = offering["provider"]["name"]
-    chain_name = offering["chain"]["name"]
-    entrypoints_urls = [entrypoint["url"] for entrypoint in offering["entrypoints"]]
-    entrypoints = "\n".join(entrypoints_urls)
-    table.add_row(offering_id, provider_name, chain_name, entrypoints)
+        offering_id = offering["id"]
+        provider_name = offering["provider"]["name"]
+        chain_name = offering["chain"]["name"]
+        entrypoints_urls = [
+            entrypoint["url"] if "url" in entrypoint else "Redacted :)"
+            for entrypoint in offering["entrypoints"]
+        ]
+        entrypoints = "\n".join(entrypoints_urls)
+        table.add_row(offering_id, provider_name, chain_name, entrypoints)
 
-    console.print(table)
+        console.print(table)
 
 
 @offerings_app.command("list")
@@ -125,21 +141,40 @@ def offerings_update(
     ),
 ):
     if not offering_id:
-        offering_id = prompt("Enter the UUID of the offering to update")
+        response = make_request_with_api_key("GET", V1Routes.LIST_OFFERINGS)
+        json_response = response.json()
+
+        offerings = []
+        for item in json_response["items"]:
+            offering = (
+                f"{item['chain']['name']} - {item['provider']['name']}",
+                item["id"],
+            )
+            offerings.append(offering)
+        questions = [
+            inquirer.List(
+                "offering",
+                message="Which offering would you like to update?",
+                choices=offerings,
+                carousel=True,
+            ),
+        ]
+        answers = inquirer.prompt(questions)
+        offering_id = answers["offering"]
 
     if config_file:
         offering_update = parse_config_file(config_file, OfferingUpdate)
     else:
-        chain_id = prompt(
-            "Enter the updated ID of the chain for the offering", type=int, default=None
-        )
-        provider_id = prompt(
-            "Enter the updated ID of the provider for the offering",
-            type=str,
-            default=None,
-        )
+        questions = [
+            inquirer.Text(
+                "chain_id",
+                message="What's the new chain ID you want to set for the offering?",
+            ),
+        ]
+        answers = inquirer.prompt(questions)
+        chain_id = answers["chain_id"]
 
-        offering_update = OfferingUpdate(chain_id=chain_id, provider_id=provider_id)
+        offering_update = OfferingUpdate(chain_id=chain_id)
 
     response = make_request_with_api_key(
         "PATCH",
@@ -162,7 +197,26 @@ def offerings_delete(
     ),
 ):
     if not offering_id:
-        offering_id = prompt("Enter the UUID of the offering to delete")
+        response = make_request_with_api_key("GET", V1Routes.LIST_OFFERINGS)
+        json_response = response.json()
+
+        offerings = []
+        for item in json_response["items"]:
+            offering = (
+                f"{item['chain']['name']} - {item['provider']['name']}",
+                item["id"],
+            )
+            offerings.append(offering)
+        questions = [
+            inquirer.List(
+                "offering",
+                message="Which offering would you like to delete?",
+                choices=offerings,
+                carousel=True,
+            ),
+        ]
+        answers = inquirer.prompt(questions)
+        offering_id = answers["offering"]
 
     response = make_request_with_api_key(
         "DELETE", f"{V1Routes.OFFERINGS}/{offering_id}"
