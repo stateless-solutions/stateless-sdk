@@ -1,39 +1,63 @@
-import ujson
-from typer import Typer, Option, Argument, prompt
 from typing import Optional
+
+import inquirer
+import ujson
 from rich.console import Console
 from rich.table import Table
+from typer import Argument, Option, Typer
 
+from cli.commands.offerings import OfferingsManager
+from cli.models.buckets import BucketCreate, BucketUpdate
 from cli.routes import V1Routes
 from cli.utils import make_request_with_api_key, parse_config_file
-
-from cli.models.buckets import BucketCreate, BucketUpdate
 
 console = Console()
 buckets_app = Typer()
 
 
+class BucketsManager:
+    @staticmethod
+    def _get_buckets():
+        response = make_request_with_api_key("GET", V1Routes.LIST_BUCKETS)
+        return response.json()["items"]
+
+    @staticmethod
+    def _select_bucket(prompt_message):
+        buckets = BucketsManager._get_buckets()
+        choices = [(bucket["name"], bucket["id"]) for bucket in buckets]
+        questions = [
+            inquirer.List(
+                "bucket", message=prompt_message, choices=choices, carousel=True
+            )
+        ]
+        answers = inquirer.prompt(questions)
+        return answers["bucket"]
+
+    @staticmethod
+    def _print_table(items, columns):
+        table = Table(show_header=True, header_style="green", padding=(0, 1, 0, 1))
+        for col in columns:
+            table.add_column(col)
+
+        for item in items:
+            table.add_row(*item, end_section=True)
+
+        console.print(table)
+
+
 @buckets_app.command("list")
 def buckets_list():
-    response = make_request_with_api_key("GET", V1Routes.LIST_BUCKETS)
-    buckets = response.json()
-
-    # TODO: fix joined loads so we display provider/offerings name instead of IDs
-    table = Table(show_header=True, header_style="green")
-    table.add_column("ID")
-    table.add_column("Name")
-    table.add_column("Chain")
-    table.add_column("Offering IDs")
-
-    for item in buckets["items"]:
-        entrypoint_id = item["id"]
-        bucket_name = item["name"]
-        chain_name = item["chain"]["name"]
-        offering_ids = [buckets["id"] for buckets in item["offerings"]]
-        offerings = "\n".join(offering_ids)
-        table.add_row(entrypoint_id, bucket_name, chain_name, str(offerings))
-
-    console.print(table)
+    buckets = BucketsManager._get_buckets()
+    items = [
+        (
+            bucket["id"],
+            bucket["name"],
+            bucket["chain"]["name"],
+            "\n".join([f"{offering['provider']['name']}" for offering in bucket["offerings"]]),
+        )
+        for bucket in buckets
+    ]
+    BucketsManager._print_table(items, ["ID", "Name", "Chain", "Offerings"])
 
 
 @buckets_app.command("create")
@@ -41,24 +65,33 @@ def buckets_create(config_file: Optional[str] = Option(None, "--config-file", "-
     if config_file:
         bucket_create = parse_config_file(config_file, BucketCreate)
     else:
-        # Interactive Prompts for Bucket Creation
-        user_id = prompt("Enter the user ID, can only be set by admins", default=None)
-        name = prompt("Enter the name of the bucket")
-        chain_id = prompt("Enter the ID of the associated chain", type=int)
-        offerings = prompt(
-            "Enter a list of offerings UUIDs to associate with the bucket (comma-separated)",
-            default="",
-        )
-
-        offerings_list = offerings.split(",") if offerings else []
+        response = make_request_with_api_key("GET", V1Routes.CHAINS)
+        chains = [
+            (str(item["name"]), str(item["chain_id"]))
+            for item in response.json()["items"]
+        ]
+        questions = [
+            inquirer.Text("name", message="Enter the name of the bucket"),
+            inquirer.List(
+                "chain_id",
+                message="Choose a blockchain for this bucket",
+                choices=chains,
+                carousel=True,
+            )
+        ]
+        answers = inquirer.prompt(questions)
+        
+        name = answers["name"]
+        chain_id = answers["chain_id"]
+        
+        offering_ids = OfferingsManager._select_offerings("Choose the offerings to associate with the bucket")
         bucket_create = BucketCreate(
-            user_id=user_id, name=name, chain_id=chain_id, offerings=offerings_list
+            name=name, chain_id=chain_id, offerings=offering_ids
         )
 
     response = make_request_with_api_key(
         "POST", V1Routes.BUCKETS, bucket_create.model_dump_json()
     )
-
     json_response = response.json()
 
     if response.status_code == 201:
@@ -70,33 +103,21 @@ def buckets_create(config_file: Optional[str] = Option(None, "--config-file", "-
 @buckets_app.command("update")
 def buckets_update(
     bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to update."),
-    config_file: Optional[str] = Option(
-        None,
-        "--config-file",
-        "-c",
-        help="The path to a JSON file with the update data.",
-    ),
+    config_file: Optional[str] = Option(None, "--config-file", "-c"),
 ):
     if not bucket_id:
-        bucket_id = prompt("Enter the UUID of the bucket to update")
+        bucket_id = BucketsManager._select_bucket("Choose the bucket to update")
 
     if config_file:
         bucket_update = parse_config_file(config_file, BucketUpdate)
     else:
-        # Interactive Prompts for Bucket Update
-        name = prompt("Enter the updated name of the bucket", default=None)
-        offerings = prompt(
-            "Enter the updated list of offerings UUIDs to associate with the bucket (comma-separated)",
-            default=None,
-        )
-
-        offerings_list = offerings.split(",") if offerings else None
-        bucket_update = BucketUpdate(name=name, offerings=offerings_list)
+        name = inquirer.text(message="Enter the updated name of the bucket")
+        offering_ids = OfferingsManager._select_offerings()
+        bucket_update = BucketUpdate(name=name, offerings=offering_ids)
 
     response = make_request_with_api_key(
         "PATCH", f"{V1Routes.BUCKETS}/{bucket_id}", bucket_update.model_dump_json()
     )
-
     json_response = response.json()
 
     if response.status_code == 200:
@@ -107,13 +128,12 @@ def buckets_update(
 
 @buckets_app.command("get")
 def buckets_get(
-    bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to get.")
+    bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to get."),
 ):
     if not bucket_id:
-        bucket_id = prompt("Enter the UUID of the bucket to get")
+        bucket_id = BucketsManager._select_bucket("Choose the bucket to get")
 
     response = make_request_with_api_key("GET", f"{V1Routes.BUCKETS}/{bucket_id}")
-
     json_response = response.json()
 
     if response.status_code == 200:
@@ -124,10 +144,10 @@ def buckets_get(
 
 @buckets_app.command("delete")
 def buckets_delete(
-    bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to delete.")
+    bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to delete."),
 ):
     if not bucket_id:
-        bucket_id = prompt("Enter the UUID of the bucket to delete")
+        bucket_id = BucketsManager._select_bucket("Choose the bucket to delete")
 
     response = make_request_with_api_key("DELETE", f"{V1Routes.BUCKETS}/{bucket_id}")
 

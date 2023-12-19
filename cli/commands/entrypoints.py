@@ -43,12 +43,12 @@ class EntrypointsManager:
 
     @staticmethod
     def _print_table(items, columns):
-        table = Table(show_header=True, header_style="green")
+        table = Table(show_header=True, header_style="green", padding=(0, 1, 0, 1))
         for col in columns:
             table.add_column(col)
-        
+
         for item in items:
-            table.add_row(*item)
+            table.add_row(*item, end_section=True)
 
         console.print(table)
 

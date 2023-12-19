@@ -4,6 +4,8 @@ from typing import List, Optional
 from pydantic import UUID4, BaseModel, ConfigDict, Field
 
 from cli.models.billing import InvoiceFullResponse
+from cli.models.chains import ChainFullResponse
+from cli.models.offerings import OfferingFullResponse
 
 
 class BucketFullResponse(BaseModel):
@@ -19,7 +21,9 @@ class BucketFullResponse(BaseModel):
     updated_at: datetime
 
     # Relationships
+    chain: Optional[ChainFullResponse]
     invoice: Optional[InvoiceFullResponse]
+    offerings: Optional[List[OfferingFullResponse]]
 
 
 class BucketCreate(BaseModel):
