@@ -4,9 +4,9 @@ from rich.console import Console
 from rich.table import Table
 from typer import Argument, Option, Typer, prompt
 
-from cli.models.providers import ProviderCreate
-from cli.routes import V1Routes
-from cli.utils import make_request_with_api_key, parse_config_file
+from ..models.providers import ProviderCreate
+from ..routes import V1Routes
+from ..utils import make_request_with_api_key, parse_config_file
 
 console = Console()
 providers_app = Typer()

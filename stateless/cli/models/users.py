@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import UUID4, Field
 
-from cli.models.accounts import AccountCreate, AccountFullResponse
+from .accounts import AccountCreate, AccountFullResponse
 
 
 class UserFullResponse(AccountFullResponse):

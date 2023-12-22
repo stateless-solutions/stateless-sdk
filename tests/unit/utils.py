@@ -7,7 +7,7 @@ import respx
 from pydantic import BaseModel
 from typer import Exit
 
-from cli.utils import (
+from stateless.cli.utils import (
     get_api_key_from_env,
     make_request_with_api_key,
     parse_config_file,

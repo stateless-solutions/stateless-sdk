@@ -4,9 +4,9 @@ from rich.console import Console
 from rich.table import Table
 from typer import Argument, Option, Typer, prompt
 
-from cli.models.chains import ChainCreate, ChainUpdate
-from cli.routes import V1Routes
-from cli.utils import make_request_with_api_key, parse_config_file
+from ..models.chains import ChainCreate, ChainUpdate
+from ..routes import V1Routes
+from ..utils import make_request_with_api_key, parse_config_file
 
 console = Console()
 chains_app = Typer()
@@ -38,7 +38,7 @@ def create_chain(
 
         if response.status_code == 201:
             console.print(f"Successfully created chain {json_response['id']}")
-            
+
     except Exception:
         return
 
@@ -71,7 +71,7 @@ def update_chain(
 
         if response.status_code == 200:
             console.print(f"Successfully updated chain {json_response['id']}")
-            
+
     except Exception:
         return
 
@@ -87,16 +87,16 @@ def get_chain(
         response = make_request_with_api_key("GET", f"{V1Routes.CHAINS}/{chain_id}")
 
         json_response = response.json()
-        
+
         if response.status_code == 200:
             table = Table(show_header=True, header_style="green")
             table.add_column("Chain ID")
             table.add_column("Name")
-            
+
             table.add_row(str(json_response["chain_id"]), json_response["name"])
-            
+
             console.print(table)
-        
+
     except Exception:
         return
 
@@ -125,11 +125,11 @@ def delete_chain(
     if chain_id is None:
         chain_id = prompt("Enter the ID of the chain to delete", type=int)
 
-    try: 
+    try:
         response = make_request_with_api_key("DELETE", f"{V1Routes.CHAINS}/{chain_id}")
 
         if response.status_code == 204:
             console.print(f"Successfully deleted chain {chain_id}")
-            
+
     except Exception:
         return

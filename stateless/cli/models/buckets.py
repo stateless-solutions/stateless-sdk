@@ -3,9 +3,9 @@ from typing import List, Optional
 
 from pydantic import UUID4, BaseModel, ConfigDict, Field
 
-from cli.models.billing import InvoiceFullResponse
-from cli.models.chains import ChainFullResponse
-from cli.models.offerings import OfferingFullResponse
+from .billing import InvoiceFullResponse
+from .chains import ChainFullResponse
+from .offerings import OfferingFullResponse
 
 
 class BucketFullResponse(BaseModel):

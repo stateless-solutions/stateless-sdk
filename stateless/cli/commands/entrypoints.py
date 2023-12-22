@@ -6,9 +6,9 @@ from rich.console import Console
 from rich.table import Table
 from typer import Argument, Option, Typer
 
-from cli.models.entrypoints import EntrypointCreate, EntrypointUpdate
-from cli.routes import V1Routes
-from cli.utils import make_request_with_api_key, parse_config_file
+from ..models.entrypoints import EntrypointCreate, EntrypointUpdate
+from ..routes import V1Routes
+from ..utils import make_request_with_api_key, parse_config_file
 
 console = Console()
 entrypoints_app = Typer()
@@ -16,7 +16,7 @@ entrypoints_app = Typer()
 class EntrypointsManager:
     @staticmethod
     def _get_offerings():
-        response = make_request_with_api_key("GET", V1Routes.LIST_OFFERINGS)
+        response = make_request_with_api_key("GET", V1Routes.LIST_ENTRYPOINTS)
         return response.json()["items"]
 
     @staticmethod

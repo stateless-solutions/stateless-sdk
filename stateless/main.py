@@ -1,18 +1,19 @@
+import readline
 import time
 import webbrowser
 
 from typer import Context, Typer, confirm, secho
 
-from cli.commands.api_keys import api_keys_app
-from cli.commands.buckets import buckets_app
-from cli.commands.chains import chains_app
-from cli.commands.entrypoints import entrypoints_app
-from cli.commands.offerings import offerings_app
-from cli.commands.providers import providers_app
-from cli.commands.regions import regions_app
-from cli.commands.users import users_app
-from cli.routes import V1Routes
-from cli.utils import get_api_key_from_env, make_request_with_api_key
+from .cli.commands.api_keys import api_keys_app
+from .cli.commands.buckets import buckets_app
+from .cli.commands.chains import chains_app
+from .cli.commands.entrypoints import entrypoints_app
+from .cli.commands.offerings import offerings_app
+from .cli.commands.providers import providers_app
+from .cli.commands.regions import regions_app
+from .cli.commands.users import users_app
+from .cli.routes import V1Routes
+from .cli.utils import get_api_key_from_env, make_request_with_api_key
 
 app = Typer()
 app.add_typer(offerings_app, name="offerings")
@@ -56,7 +57,7 @@ def main(ctx: Context):
                 else:
                     response = make_request_with_api_key("GET", V1Routes.ACCOUNT_PROFILE)
                     json_response = response.json()
-                    
+
                     if response.status_code == 200:
                         name: str  = json_response['name']
                         account_type: str = json_response['account_type']

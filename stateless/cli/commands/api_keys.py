@@ -6,9 +6,9 @@ from rich.console import Console
 from rich.table import Table
 from typer import Argument, Option, Typer
 
-from cli.models.api_keys import APIKeyCreate, APIKeyUpdate
-from cli.routes import V1Routes
-from cli.utils import make_request_with_api_key, parse_config_file
+from ..models.api_keys import APIKeyCreate, APIKeyUpdate
+from ..routes import V1Routes
+from ..utils import make_request_with_api_key, parse_config_file
 
 console = Console()
 api_keys_app = Typer()
