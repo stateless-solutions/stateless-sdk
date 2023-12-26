@@ -14,7 +14,7 @@ Before installing the CLI, ensure you have the following:
 The CLI is available through a Python package repository, and you can download it using pip:
 
 ```bash
-pip install stateless-cli
+pip install stateless-sdk
 ```
 After installation, run the setup command to initiate the CLI. This command will also handle API key setup:
 
