@@ -70,7 +70,7 @@ The `create` command lets users generate a new API key. There are two ways to cr
 api keys app create
 ```
 
-When this command is executed, the CLI will interactively prompt for the required information step-by-step, including Account ID, API Key Name, an optional API Key Prefix, and an optional expiration date. 
+When this command is executed, the CLI will interactively prompt for the required information, including the name of the API key and the number of days until expiration.
 
 Upon completion, a confirmation message will be displayed with details of the newly created API key.
 
@@ -95,6 +95,7 @@ The `update` command allows users to modify the details of an existing API key. 
 ```bash
 api keys app update <api_key_id>
 ```
+The CLI will prompt the user to choose an API key and then provide options to update its name and expiration date.
 
 #### Using a JSON Configuration File
 
@@ -108,7 +109,7 @@ api_keys_app update <api_key_id> --config file <path_to_config_file>
 api keys app get <api_key_id>
 ```
 
-Users can fetch details about a specific API key using this command. The prefix and name attributes of the specified API key will be displayed.
+Users can fetch details about a specific API key using this command. The CLI will prompt the user to select an API key, and then display its details.
 
 ### List all API keys
 
@@ -116,7 +117,7 @@ Users can fetch details about a specific API key using this command. The prefix 
 api keys app list
 ```
 
-Fetches and displays a list of all the API keys associated with the current account.
+Fetches and displays a list of all the API keys associated with the current account. The list will include the ID and name of each API key.
 
 ### Delete an API key
 
@@ -124,7 +125,7 @@ Fetches and displays a list of all the API keys associated with the current acco
 api keys app delete <api_key_id>
 ```
 
-Offers the capability to permanently remove an API key from the platform. On successful deletion, a confirmation message will be displayed. Please note that this action is permanent and deleted keys cannot be recovered or reactivated.
+This command allows for the deletion of a specific API key. The user will be prompted to select an API key for deletion. Please note that this action is irreversible, and deleted keys cannot be recovered.
 
 ## Offerings
 Offerings are the cataloged services or data streams provided by the platform, which users can utilize within their applications. These offerings may relate to specific blockchain data, services, or entry points for data access. Managing offerings is a crucial aspect for both providers, who supply these services, and consumers, who integrate them into their applications.
