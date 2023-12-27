@@ -207,17 +207,17 @@ Prior to leveraging these commands, please ensure all prerequisites, such as API
 buckets app list
 ```
 
-This command fetches and displays all the active Buckets of the current account. Users can view a comprehensive list and glean important information about each 'Bucket' such as its ID, Name, associated Chain, and Offering IDs.
+This command fetches and displays all the active Buckets of the current account. Users can view a comprehensive list and glean important information about each 'Bucket,' such as its ID, Name, associated Chain, and Offerings.
 
 ### Create Bucket
 
-The `create` command allows users to create a new Bucket associated with their account. There are two ways to create a bucket: through interactive prompts or using a JSON configuration file.
+The create command allows users to create a new Bucket associated with their account either through interactive prompts or by using a JSON configuration file.
 
 ```bash
 buckets app create
 ```
 
-When this command is executed without a config file, the CLI will interactively prompt for the required information, including User ID (for admins), Bucket Name, Chain ID, and Offerings (as comma-separated UUIDs). Upon completion, a confirmation message is displayed with the ID of the newly created Bucket.
+The CLI will interactively prompt for the required information, including Bucket Name, Chain ID, and Offerings (selected from available offerings).
 
 #### With a JSON Configuration File
 
@@ -230,19 +230,20 @@ Example JSON:
 ```json
 {
    "name": "My first bucket",
-   "chain_id": 1
+   "chain_id": "1",
+   "offerings": ["offering_id_1", "offering_id_2"]
 }
 ```
 
 ### Update Bucket
 
-The `update` command allows users to modify the details of an existing bucket. There are two ways to update a bucket: through interactive prompts or using a JSON configuration file.
+This command allows users to modify the details of an existing bucket, either through interactive prompts or by using a JSON configuration file.
 
 ```bash
-buckets_app update <bucket_id>
+buckets app update <bucket_id>
 ```
 
-With this command, users can modify the details of an existing Bucket, such as changing the name or adding a new offering. Upon successful update, a confirmation message showcasing the ID of the updated Bucket will appear.
+The CLI will prompt the user to select a bucket and then provide options to update its name and associated offerings.
 
 #### Using a JSON Configuration File
 
@@ -253,18 +254,18 @@ buckets app update <bucket_id> --config file <path_to_config_file>
 ### Retrieve Bucket Details
 
 ```bash
-buckets_app get <bucket_id>
+buckets app get <bucket_id>
 ```
 
-Fetches detailed information about a specific Bucket based on its UUID. It's useful for inspecting the attributes of a particular Bucket. The output will be a table displaying the ID, region, provider ID, and chain ID.
+Fetches detailed information about a specific Bucket based on its UUID. The CLI will prompt the user to select a bucket, and the output will display detailed information about the Bucket, including its ID, name, associated chain, and offerings.
 
 ### Delete a Bucket
 
 ```bash
-buckets_app delete <bucket_id>
+buckets app delete <bucket_id>
 ```
 
-Provides the functionality to remove a Bucket from an Account. Please note that this action will permanently delete the specified Bucket resource and all its associated data. After running this command, users will see a confirmation message confirming the bucket deletion.
+This command provides the functionality to remove a Bucket from an account. The user will be prompted to select a bucket for deletion. Please note that this action will permanently delete the specified Bucket resource and all its associated data. A confirmation message will be displayed upon successful deletion.
 
 ## Entrypoints
 Entrypoints are specific URLs or access points that applications use to send requests to data providers. Managing entrypoints is essential for providers to control how and where their data is accessed. This set of CLI commands is intended for providers to manage entrypoints, whereas applications utilize these entrypoints to interact with providers' data.
@@ -277,7 +278,7 @@ Entrypoints are specific URLs or access points that applications use to send req
 entrypoints app list
 ```
 
-Retrieves and lists all entrypoints that are associated with a bucket. The output will display the Bucket ID and Service URL.
+Retrieves and lists all entrypoints associated with a specific offering. Users can view a table displaying each entrypoint's ID, URL, and associated region.
 
 ### Retrieve an entrypoint
 
@@ -285,17 +286,17 @@ Retrieves and lists all entrypoints that are associated with a bucket. The outpu
 entrypoints app get <entrypoint_id>
 ```
 
-Fetches information about a specific entrypoint using its UUID. Returns a JSON-formatted output detailing the entrypoint's configuration.
+Fetches information about a specific entrypoint. The CLI will prompt the user to select an entrypoint, and the output will display a JSON-formatted output detailing the entrypoint's configuration.
 
 ### Create an entrypoint (Provider only)
 
-The `create` command registers a new entrypoint. There are two ways to create an entrypoint: through interactive prompts or using a JSON configuration file.
+The create command registers a new entrypoint either through interactive prompts or by using a JSON configuration file.
 
 ```bash
 entrypoints app create
 ```
 
-When executed, the CLI will interactively prompt for the required information, including Entrypoint URL, Offering ID, and Region ID. Upon completion, a confirmation message with the ID and URL of the newly created entrypoint is returned.
+When executed, the CLI will interactively prompt for the required information, including Entrypoint URL, Offering ID, and Region ID.
 
 #### With a JSON Configuration File
 
@@ -306,7 +307,7 @@ Example JSON:
 
 ```json
 {
-    "url": "https://ss-use.provider.com/eth",
+    "url": "https://example-entrypoint.com",
     "offering_id": "84031ebd-5963-47b1-87f5-887a3e6a8571",
     "region_id": "dbc673ef-834c-438a-889d-45b1b5e0ed20"
 }
@@ -314,26 +315,26 @@ Example JSON:
 
 ### Update an entrypoint (Provider only)
 
-The `update` command allows for updating the configuration of an existing entrypoint.
+Allows for updating the configuration of an existing entrypoint.
 
 ```bash
 entrypoints_app update <entrypoint_id>
 ```
-A success message with the updated entrypoint's ID is displayed if the operation is successful.
-
+The CLI will prompt the user to select an entrypoint and then provide options to update its URL.
+ 
 #### With a JSON Configuration File
 
 ```bash
-entrypoints_app update <entrypoint_id> --config_file <path_to_config_file>
+entrypoints app update <entrypoint_id> --config_file <path_to_config_file>
 ```
 
 ### Delete an entrypoint (Provider only)
 
 ```bash
-entrypoints_app delete <entrypoint_id>
+entrypoints app delete <entrypoint_id>
 ```
 
-Removes an entrypoint from the registry. A message confirming the successful deletion of the entrypoint will be displayed. Please note this action is final and cannot be undone.
+Removes an entrypoint from the registry. The user will be prompted to select an entrypoint for deletion. A message confirming the successful deletion of the entrypoint will be displayed. Please note this action is final and cannot be undone.
 
 ## Help
 The `help` command in the gateway-cli is designed to provide users with assistance and information on how to use various commands within the CLI. It's an essential tool for both new and experienced users to quickly get help on specific commands or to get an overview of the CLI's capabilities.
