@@ -100,7 +100,7 @@ The CLI will prompt the user to choose an API key and then provide options to up
 #### Using a JSON Configuration File
 
 ```bash
-api_keys_app update <api_key_id> --config file <path_to_config_file>
+api keys app update <api_key_id> --config file <path_to_config_file>
 ```
 
 ### Retrieve API key details
@@ -318,7 +318,7 @@ Example JSON:
 Allows for updating the configuration of an existing entrypoint.
 
 ```bash
-entrypoints_app update <entrypoint_id>
+entrypoints app update <entrypoint_id>
 ```
 The CLI will prompt the user to select an entrypoint and then provide options to update its URL.
  
@@ -342,7 +342,7 @@ The `help` command in the gateway-cli is designed to provide users with assistan
 ### General Help
 
 ```bash
-gateway-cli help
+stateless-cli help
 ```
 
 This command displays a general help message, which includes a list of all top-level commands available in the gateway-cli. It provides a brief description of what each command does to better understand the overall functionality. 
@@ -350,7 +350,7 @@ This command displays a general help message, which includes a list of all top-l
 When you run `gateway-cli help`, you will see an output similar to the following:
 
 ```bash
-gateway-cli
+stateless-cli
 
 Usage:
   gateway-cli [command]
@@ -361,32 +361,32 @@ Available Commands:
   entrypoints    Control Entrypoints for data access
   api-keys       Operations related to API keys
 
-Use "gateway-cli [command] help" for more information about a command.
+Use "stateless-cli [command] help" for more information about a command.
 ```
 
 ### Command Specific Help
 To get detailed help on a specific command, append `help` after the command name:
 
 ```bash
-gateway-cli [command] help
+stateless-cli [command] help
 ```
 
 For example:
 
 ```bash
-gateway-cli buckets help
+stateless-cli buckets help
 ```
 
 Displays help for the `buckets` command, including its subcommands like list, create, update, get, and delete.
 
 ```bash
-gateway-cli offerings help
+stateless-cli offerings help
 ```
 
 Shows detailed usage for the `offerings` command, including information on listing, creating, updating, and deleting offerings.
 
 ```bash
-gateway-cli entrypoints help
+stateless-cli entrypoints help
 ```
 
 Provides help specific to the `entrypoints` command, guiding on how to manage entrypoints.
