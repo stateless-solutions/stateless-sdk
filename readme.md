@@ -138,7 +138,7 @@ Offerings are the cataloged services or data streams provided by the platform, w
 offerings app list
 ```
 
-Use this command to retrieve and list all available offerings. The output displays a table that lists all offerings, including their IDs, providers, chains, and the count of entry points associated with each offering.
+Use this command to retrieve and list all available offerings. The output displays a table listing all offerings, including their IDs, providers, chains, and the count of entry points associated with each offering.
 
 ### See offering details
 
@@ -146,17 +146,16 @@ Use this command to retrieve and list all available offerings. The output displa
 offerings app detail <id>
 ```
 
-Retrieve detailed information about a specific offering using this command. The output displays a table with detailed information about the offering, including its ID, the provider name, the chain it operates on, and the URLs for each of its entry points.
+Retrieve detailed information about a specific offering using this command. The CLI will prompt the user to select an offering, and the output will display a table with detailed information about the offering, including its ID, the provider name, the chain it operates on, and the URLs for each of its entry points.
 
 ### Create an offering (Provider only)
 
-The `create` command allows data service providers to create a new offering. There are two ways to create an offering: through interactive prompts or using a JSON configuration file.
+The create command allows data service providers to create a new offering either through interactive prompts or by using a JSON configuration file.
 
 ```bash
 offerings app create
 ```
-
-When this command is executed without a config file, the CLI will interactively prompt for the required information, including Chain ID and Provider ID. Upon completion, a confirmation message will be displayed with details of the newly created offering.
+The CLI will interactively prompt for the required information, including the target blockchain platform for the offering.
 
 #### Using a JSON Configuration File
 
@@ -167,20 +166,19 @@ Example JSON:
 
 ```json
 {
-    "provider_id": "c233c4fa-7721-45a7-b6f4-10d2f1121620",
-    "chain_id": 1
+    "chain_id": "1" // Target blockchain platform ID
 }
 ```
 
 ### Update an offering (Provider only)
 
-The `update` command allows providers to modify the details of an existing offering. There are two ways to update an offering: through interactive prompts or using a JSON configuration file.
+Providers can modify the details of an existing offering either through interactive prompts or by using a JSON configuration file.
 
 ```bash
 offerings app update <offering_id>
 ```
 
-If the update is successful, the command prints a confirmation message with the ID of the updated offering.
+The CLI will prompt the user to select an offering and then provide options to update its chain ID. If the update is successful, the command prints a confirmation message with the ID of the updated offering.
 
 #### Using a JSON Configuration File
 
@@ -194,7 +192,7 @@ offerings app update <offering_id> --config file <path_to_config_file>
 offerings app delete <offering_id>
 ```
 
-Use this command to remove an offering from the platform. A success message will confirm the offering has been deleted. Please note that this action is irreversible.
+Use this command to remove an offering from the platform. The user will be prompted to select an offering for deletion. A success message will confirm the offering has been deleted. Please note that this action is irreversible.
 
 ## Buckets
 Buckets are designated blockchain data providers that applications using the platform's APIs elect to send their requests. The CLI offers commands to seamlessly manage these Buckets. 
