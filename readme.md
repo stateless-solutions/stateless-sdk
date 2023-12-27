@@ -67,7 +67,7 @@ API keys are essential for both applications and providers to interact securely 
 The `create` command lets users generate a new API key. There are two ways to create an API key: using a JSON configuration file or through interactive prompts.
 
 ```bash
-api keys app create
+stateless-cli api-keys create
 ```
 
 When this command is executed, the CLI will interactively prompt for the required information, including the name of the API key and the number of days until expiration.
@@ -77,7 +77,7 @@ Upon completion, a confirmation message will be displayed with details of the ne
 #### Using a JSON Configuration File
 
 ```bash
-api keys app create --config file <path_to_config_file>
+stateless-cli api-keys create --config file <path_to_config_file>
 ```
 
 Example JSON:
@@ -93,20 +93,20 @@ Example JSON:
 The `update` command allows users to modify the details of an existing API key. Like creating API keys, updates can be done through interactive prompts or by providing a JSON configuration file.
 
 ```bash
-api keys app update <api_key_id>
+stateless-cli api-keys update <api_key_id>
 ```
 The CLI will prompt the user to choose an API key and then provide options to update its name and expiration date.
 
 #### Using a JSON Configuration File
 
 ```bash
-api keys app update <api_key_id> --config file <path_to_config_file>
+stateless-cli api-keys update <api_key_id> --config file <path_to_config_file>
 ```
 
 ### Retrieve API key details
 
 ```bash
-api keys app get <api_key_id>
+stateless-cli api-keys get <api_key_id>
 ```
 
 Users can fetch details about a specific API key using this command. The CLI will prompt the user to select an API key, and then display its details.
@@ -114,7 +114,7 @@ Users can fetch details about a specific API key using this command. The CLI wil
 ### List all API keys
 
 ```bash
-api keys app list
+stateless-cli api-keys list
 ```
 
 Fetches and displays a list of all the API keys associated with the current account. The list will include the ID and name of each API key.
@@ -122,7 +122,7 @@ Fetches and displays a list of all the API keys associated with the current acco
 ### Delete an API key
 
 ```bash
-api keys app delete <api_key_id>
+stateless-cli api-keys delete <api_key_id>
 ```
 
 This command allows for the deletion of a specific API key. The user will be prompted to select an API key for deletion. Please note that this action is irreversible, and deleted keys cannot be recovered.
@@ -135,7 +135,7 @@ Offerings are the cataloged services or data streams provided by the platform, w
 ### List all offerings
 
 ```bash
-offerings app list
+stateless-cli offerings list
 ```
 
 Use this command to retrieve and list all available offerings. The output displays a table listing all offerings, including their IDs, providers, chains, and the count of entry points associated with each offering.
@@ -143,7 +143,7 @@ Use this command to retrieve and list all available offerings. The output displa
 ### See offering details
 
 ```bash
-offerings app detail <id>
+stateless-cli offerings detail <id>
 ```
 
 Retrieve detailed information about a specific offering using this command. The CLI will prompt the user to select an offering, and the output will display a table with detailed information about the offering, including its ID, the provider name, the chain it operates on, and the URLs for each of its entry points.
@@ -153,14 +153,14 @@ Retrieve detailed information about a specific offering using this command. The 
 The create command allows data service providers to create a new offering either through interactive prompts or by using a JSON configuration file.
 
 ```bash
-offerings app create
+stateless-cli offerings create
 ```
 The CLI will interactively prompt for the required information, including the target blockchain platform for the offering.
 
 #### Using a JSON Configuration File
 
 ```bash
-offerings app create --config file <path_to_config_file>
+stateless-cli offerings create --config file <path_to_config_file>
 ```
 Example JSON:
 
@@ -175,7 +175,7 @@ Example JSON:
 Providers can modify the details of an existing offering either through interactive prompts or by using a JSON configuration file.
 
 ```bash
-offerings app update <offering_id>
+stateless-cli offerings update <offering_id>
 ```
 
 The CLI will prompt the user to select an offering and then provide options to update its chain ID. If the update is successful, the command prints a confirmation message with the ID of the updated offering.
@@ -183,13 +183,13 @@ The CLI will prompt the user to select an offering and then provide options to u
 #### Using a JSON Configuration File
 
 ```bash
-offerings app update <offering_id> --config file <path_to_config_file>
+stateless-cli offerings update <offering_id> --config file <path_to_config_file>
 ```
 
 ### Delete an offering (Provider only)
 
 ```bash
-offerings app delete <offering_id>
+stateless-cli offerings delete <offering_id>
 ```
 
 Use this command to remove an offering from the platform. The user will be prompted to select an offering for deletion. A success message will confirm the offering has been deleted. Please note that this action is irreversible.
@@ -204,7 +204,7 @@ Prior to leveraging these commands, please ensure all prerequisites, such as API
 ### List Buckets
 
 ```bash
-buckets app list
+stateless-cli buckets list
 ```
 
 This command fetches and displays all the active Buckets of the current account. Users can view a comprehensive list and glean important information about each 'Bucket,' such as its ID, Name, associated Chain, and Offerings.
@@ -214,7 +214,7 @@ This command fetches and displays all the active Buckets of the current account.
 The create command allows users to create a new Bucket associated with their account either through interactive prompts or by using a JSON configuration file.
 
 ```bash
-buckets app create
+stateless-cli buckets create
 ```
 
 The CLI will interactively prompt for the required information, including Bucket Name, Chain ID, and Offerings (selected from available offerings).
@@ -222,7 +222,7 @@ The CLI will interactively prompt for the required information, including Bucket
 #### With a JSON Configuration File
 
 ```bash
-buckets app create --config_file <path_to_config_file>
+stateless-cli buckets create --config_file <path_to_config_file>
 ```
 
 Example JSON:
@@ -240,7 +240,7 @@ Example JSON:
 This command allows users to modify the details of an existing bucket, either through interactive prompts or by using a JSON configuration file.
 
 ```bash
-buckets app update <bucket_id>
+stateless-cli buckets update <bucket_id>
 ```
 
 The CLI will prompt the user to select a bucket and then provide options to update its name and associated offerings.
@@ -248,13 +248,13 @@ The CLI will prompt the user to select a bucket and then provide options to upda
 #### Using a JSON Configuration File
 
 ```bash
-buckets app update <bucket_id> --config file <path_to_config_file>
+stateless-cli buckets update <bucket_id> --config file <path_to_config_file>
 ```
 
 ### Retrieve Bucket Details
 
 ```bash
-buckets app get <bucket_id>
+stateless-cli buckets get <bucket_id>
 ```
 
 Fetches detailed information about a specific Bucket based on its UUID. The CLI will prompt the user to select a bucket, and the output will display detailed information about the Bucket, including its ID, name, associated chain, and offerings.
@@ -262,7 +262,7 @@ Fetches detailed information about a specific Bucket based on its UUID. The CLI 
 ### Delete a Bucket
 
 ```bash
-buckets app delete <bucket_id>
+stateless-cli buckets delete <bucket_id>
 ```
 
 This command provides the functionality to remove a Bucket from an account. The user will be prompted to select a bucket for deletion. Please note that this action will permanently delete the specified Bucket resource and all its associated data. A confirmation message will be displayed upon successful deletion.
@@ -275,7 +275,7 @@ Entrypoints are specific URLs or access points that applications use to send req
 ### List all entrypoints
 
 ```bash
-entrypoints app list
+stateless-cli entrypoints list
 ```
 
 Retrieves and lists all entrypoints associated with a specific offering. Users can view a table displaying each entrypoint's ID, URL, and associated region.
@@ -283,7 +283,7 @@ Retrieves and lists all entrypoints associated with a specific offering. Users c
 ### Retrieve an entrypoint
 
 ```bash
-entrypoints app get <entrypoint_id>
+stateless-cli entrypoints get <entrypoint_id>
 ```
 
 Fetches information about a specific entrypoint. The CLI will prompt the user to select an entrypoint, and the output will display a JSON-formatted output detailing the entrypoint's configuration.
@@ -293,7 +293,7 @@ Fetches information about a specific entrypoint. The CLI will prompt the user to
 The create command registers a new entrypoint either through interactive prompts or by using a JSON configuration file.
 
 ```bash
-entrypoints app create
+stateless-cli entrypoints create
 ```
 
 When executed, the CLI will interactively prompt for the required information, including Entrypoint URL, Offering ID, and Region ID.
@@ -301,7 +301,7 @@ When executed, the CLI will interactively prompt for the required information, i
 #### With a JSON Configuration File
 
 ```bash
-entrypoints app create --config file <path_to_config_file>
+stateless-cli entrypoints create --config file <path_to_config_file>
 ```
 Example JSON:
 
@@ -318,20 +318,20 @@ Example JSON:
 Allows for updating the configuration of an existing entrypoint.
 
 ```bash
-entrypoints app update <entrypoint_id>
+stateless-cli entrypoints update <entrypoint_id>
 ```
 The CLI will prompt the user to select an entrypoint and then provide options to update its URL.
  
 #### With a JSON Configuration File
 
 ```bash
-entrypoints app update <entrypoint_id> --config_file <path_to_config_file>
+stateless-cli entrypoints update <entrypoint_id> --config_file <path_to_config_file>
 ```
 
 ### Delete an entrypoint (Provider only)
 
 ```bash
-entrypoints app delete <entrypoint_id>
+stateless-cli entrypoints delete <entrypoint_id>
 ```
 
 Removes an entrypoint from the registry. The user will be prompted to select an entrypoint for deletion. A message confirming the successful deletion of the entrypoint will be displayed. Please note this action is final and cannot be undone.
