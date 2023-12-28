@@ -69,5 +69,8 @@ def main(ctx: Context):
 
                 break
 
-if __name__ == "__main__":
+def _main():
     app()
+
+if __name__ == "__main__":
+    _main()

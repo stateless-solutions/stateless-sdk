@@ -15,7 +15,8 @@ dependencies = [
     "ujson~=5.8.0"
 ]
 
-scripts = {}
+[project.scripts]
+stateless-cli = "stateless.main:_main"
 
 [project.optional-dependencies]
 dev = [
