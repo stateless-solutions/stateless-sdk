@@ -12,7 +12,8 @@ dependencies = [
     "pydantic~=2.4.2",
     "httpx~=0.24.1",
     "rich~=13.6.0",
-    "ujson~=5.8.0"
+    "ujson~=5.8.0",
+    "inquirer~=3.1.4"
 ]
 
 [project.scripts]
