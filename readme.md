@@ -19,7 +19,7 @@ pip install stateless-sdk
 After installation, run the setup command to initiate the CLI. This command will also handle API key setup:
 
 ```bash
-stateless-cli setup
+stateless-cli
 ```
 
 During the setup, if you don't have an API key, the CLI will direct you to the Stateless API key registration page. Once you have your API key, you can set it as an environment variable for the CLI to use.
@@ -93,7 +93,7 @@ Example JSON:
 The `update` command allows users to modify the details of an existing API key. Like creating API keys, updates can be done through interactive prompts or by providing a JSON configuration file.
 
 ```bash
-stateless-cli api-keys update <api_key_id>
+stateless-cli api-keys update
 ```
 The CLI will prompt the user to choose an API key and then provide options to update its name and expiration date.
 
@@ -106,7 +106,7 @@ stateless-cli api-keys update <api_key_id> --config file <path_to_config_file>
 ### Retrieve API key details
 
 ```bash
-stateless-cli api-keys get <api_key_id>
+stateless-cli api-keys get 
 ```
 
 Users can fetch details about a specific API key using this command. The CLI will prompt the user to select an API key, and then display its details.
@@ -122,7 +122,7 @@ Fetches and displays a list of all the API keys associated with the current acco
 ### Delete an API key
 
 ```bash
-stateless-cli api-keys delete <api_key_id>
+stateless-cli api-keys delete
 ```
 
 This command allows for the deletion of a specific API key. The user will be prompted to select an API key for deletion. Please note that this action is irreversible, and deleted keys cannot be recovered.
