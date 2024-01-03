@@ -5,9 +5,9 @@ from rich.console import Console
 from rich.table import Table
 from typer import Argument, Option, Typer
 
-from cli.models.offerings import OfferingCreate, OfferingUpdate
-from cli.routes import V1Routes
-from cli.utils import make_request_with_api_key, parse_config_file
+from ..models.offerings import OfferingCreate, OfferingUpdate
+from ..routes import V1Routes
+from ..utils import make_request_with_api_key, parse_config_file
 
 console = Console()
 offerings_app = Typer()
@@ -41,7 +41,7 @@ class OfferingsManager:
         offerings = OfferingsManager._get_offerings()
         choices = [
             (
-                f"{offering['chain']['name']} - {offering['provider']['name']}",
+                "{}".format(offering['provider']['name']),
                 offering["id"],
             )
             for offering in offerings
@@ -50,7 +50,7 @@ class OfferingsManager:
             inquirer.Checkbox("offerings", message=prompt_message, choices=choices)
         ]
         answers = inquirer.prompt(questions)
-        
+
         return answers["offerings"]
 
     @staticmethod
@@ -88,11 +88,10 @@ def offerings_detail(id: Optional[str] = Argument(None)):
                 (
                     offering["id"],
                     offering["provider"]["name"],
-                    offering["chain"]["name"],
                     entrypoints,
                 )
             ],
-            ["ID", "Provider", "Chain", "Entrypoints"],
+            ["ID", "Provider", "Entrypoints"],
         )
 
 
@@ -103,12 +102,11 @@ def offerings_list():
         (
             item["id"],
             item["provider"]["name"],
-            item["chain"]["name"],
             str(len(item["entrypoints"])),
         )
         for item in offerings
     ]
-    OfferingsManager._print_table(items, ["ID", "Provider", "Chain", "Entrypoints"])
+    OfferingsManager._print_table(items, ["ID", "Provider", "Entrypoints"])
 
 
 @offerings_app.command("create")

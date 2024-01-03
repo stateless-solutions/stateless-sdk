@@ -6,10 +6,10 @@ from rich.console import Console
 from rich.table import Table
 from typer import Argument, Option, Typer
 
-from cli.commands.offerings import OfferingsManager
-from cli.models.buckets import BucketCreate, BucketUpdate
-from cli.routes import V1Routes
-from cli.utils import make_request_with_api_key, parse_config_file
+from .offerings import OfferingsManager
+from ..models.buckets import BucketCreate, BucketUpdate
+from ..routes import V1Routes
+from ..utils import make_request_with_api_key, parse_config_file
 
 console = Console()
 buckets_app = Typer()

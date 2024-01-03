@@ -2,10 +2,10 @@ from typing import Optional
 from typer import Typer, Option, Argument, prompt
 from rich.console import Console
 from rich.table import Table
-from cli.routes import V1Routes
-from cli.utils import make_request_with_api_key, parse_config_file
 
-from cli.models.users import UserCreate
+from ..routes import V1Routes
+from ..utils import make_request_with_api_key, parse_config_file
+from ..models.users import UserCreate
 
 console = Console()
 users_app = Typer()

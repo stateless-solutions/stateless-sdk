@@ -1,1 +1,0 @@
-black --extend-exclude "^/alembic/versions/.*\.py" .

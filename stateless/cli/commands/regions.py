@@ -2,10 +2,10 @@ from typer import Typer, Option, Argument, prompt
 from typing import Optional
 from rich.console import Console
 from rich.table import Table
-from cli.routes import V1Routes
-from cli.utils import make_request_with_api_key, parse_config_file
 
-from cli.models.regions import RegionCreate, RegionUpdate
+from ..routes import V1Routes
+from ..utils import make_request_with_api_key, parse_config_file
+from ..models.regions import RegionCreate, RegionUpdate
 
 console = Console()
 regions_app = Typer()

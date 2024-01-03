@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import Field
 
-from cli.models.accounts import AccountCreate, AccountFullResponse
+from .accounts import AccountCreate, AccountFullResponse
 
 
 class ProviderFullResponse(AccountFullResponse):

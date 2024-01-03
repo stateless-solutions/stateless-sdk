@@ -3,7 +3,7 @@ requires = ["setuptools>=61.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "stateless-gateway-cli"
+name = "stateless-sdk"
 version = "0.0.1"
 authors = [{name = "blockjoe", email = "joe@stateless.solutions"}]
 description = "A CLI for interacting with the Stateless Gateway"
@@ -12,10 +12,12 @@ dependencies = [
     "pydantic~=2.4.2",
     "httpx~=0.24.1",
     "rich~=13.6.0",
-    "ujson~=5.8.0"
+    "ujson~=5.8.0",
+    "inquirer~=3.1.4"
 ]
 
-scripts = {}
+[project.scripts]
+stateless-cli = "stateless.main:_main"
 
 [project.optional-dependencies]
 dev = [
