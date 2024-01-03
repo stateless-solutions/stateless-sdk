@@ -64,44 +64,18 @@ API keys are essential for both applications and providers to interact securely 
 
 ### Create an API key
 
-The `create` command lets users generate a new API key. There are two ways to create an API key: using a JSON configuration file or through interactive prompts.
-
 ```bash
 stateless-cli api-keys create
 ```
 
-When this command is executed, the CLI will interactively prompt for the required information, including the name of the API key and the number of days until expiration.
+The create command lets users generate a new API key. When this command is executed, the CLI will interactively prompt for the required information, including the name of the API key and the number of days until expiration. Upon completion, a confirmation message will be displayed with details of the newly created API key. Upon completion, a confirmation message will be displayed with details of the newly created API key.
 
-Upon completion, a confirmation message will be displayed with details of the newly created API key.
-
-#### Using a JSON Configuration File
-
-```bash
-stateless-cli api-keys create --config file <path_to_config_file>
-```
-
-Example JSON:
-
-```json
-{
-  "name": "My API Key",
-  "expires_at": "2023-12-31T23:59:59" // Optional expiration date
-}
-```
 ### Update an API key
-
-The `update` command allows users to modify the details of an existing API key. Like creating API keys, updates can be done through interactive prompts or by providing a JSON configuration file.
 
 ```bash
 stateless-cli api-keys update
 ```
-The CLI will prompt the user to choose an API key and then provide options to update its name and expiration date.
-
-#### Using a JSON Configuration File
-
-```bash
-stateless-cli api-keys update <api_key_id> --config file <path_to_config_file>
-```
+The update command allows users to modify the details of an existing API key. The CLI will prompt the user to choose an API key and then provide options to update its name and expiration date.
 
 ### Retrieve API key details
 
@@ -150,41 +124,18 @@ Retrieve detailed information about a specific offering using this command. The 
 
 ### Create an offering (Provider only)
 
-The create command allows data service providers to create a new offering either through interactive prompts or by using a JSON configuration file.
-
 ```bash
 stateless-cli offerings create
 ```
-The CLI will interactively prompt for the required information, including the target blockchain platform for the offering.
+The create command allows data service providers to create a new offering. The CLI will interactively prompt for the required information, including the target blockchain platform for the offering.
 
-#### Using a JSON Configuration File
-
-```bash
-stateless-cli offerings create --config file <path_to_config_file>
-```
-Example JSON:
-
-```json
-{
-    "chain_id": "1" // Target blockchain platform ID
-}
-```
-
-### Update an offering (Provider only)
-
-Providers can modify the details of an existing offering either through interactive prompts or by using a JSON configuration file.
+### Update an offering (Provider only) 
 
 ```bash
 stateless-cli offerings update <offering_id>
 ```
 
-The CLI will prompt the user to select an offering and then provide options to update its chain ID. If the update is successful, the command prints a confirmation message with the ID of the updated offering.
-
-#### Using a JSON Configuration File
-
-```bash
-stateless-cli offerings update <offering_id> --config file <path_to_config_file>
-```
+Providers can modify the details of an existing offering using this command. The CLI will prompt the user to select an offering and then provide options to update its chain ID. If the update is successful, the command prints a confirmation message with the ID of the updated offering.
 
 ### Delete an offering (Provider only)
 
@@ -211,45 +162,19 @@ This command fetches and displays all the active Buckets of the current account.
 
 ### Create Bucket
 
-The create command allows users to create a new Bucket associated with their account either through interactive prompts or by using a JSON configuration file.
-
 ```bash
 stateless-cli buckets create
 ```
 
-The CLI will interactively prompt for the required information, including Bucket Name, Chain ID, and Offerings (selected from available offerings).
-
-#### With a JSON Configuration File
-
-```bash
-stateless-cli buckets create --config_file <path_to_config_file>
-```
-
-Example JSON:
-
-```json
-{
-   "name": "My first bucket",
-   "chain_id": "1",
-   "offerings": ["offering_id_1", "offering_id_2"]
-}
-```
+The create command allows users to create a new Bucket associated with their account. The CLI will interactively prompt for the required information, including Bucket Name, Chain ID, and Offerings (selected from available offerings).
 
 ### Update Bucket
-
-This command allows users to modify the details of an existing bucket, either through interactive prompts or by using a JSON configuration file.
 
 ```bash
 stateless-cli buckets update <bucket_id>
 ```
 
-The CLI will prompt the user to select a bucket and then provide options to update its name and associated offerings.
-
-#### Using a JSON Configuration File
-
-```bash
-stateless-cli buckets update <bucket_id> --config file <path_to_config_file>
-```
+This command allows users to modify the details of an existing bucket. The CLI will prompt the user to select a bucket and then provide options to update its name and associated offerings.
 
 ### Retrieve Bucket Details
 
@@ -290,43 +215,18 @@ Fetches information about a specific entrypoint. The CLI will prompt the user to
 
 ### Create an entrypoint (Provider only)
 
-The create command registers a new entrypoint either through interactive prompts or by using a JSON configuration file.
-
 ```bash
 stateless-cli entrypoints create
 ```
 
-When executed, the CLI will interactively prompt for the required information, including Entrypoint URL, Offering ID, and Region ID.
-
-#### With a JSON Configuration File
-
-```bash
-stateless-cli entrypoints create --config file <path_to_config_file>
-```
-Example JSON:
-
-```json
-{
-    "url": "https://example-entrypoint.com",
-    "offering_id": "84031ebd-5963-47b1-87f5-887a3e6a8571",
-    "region_id": "dbc673ef-834c-438a-889d-45b1b5e0ed20"
-}
-```
+The create command registers a new entrypoint. When executed, the CLI will interactively prompt for the required information, including Entrypoint URL, Offering ID, and Region ID.
 
 ### Update an entrypoint (Provider only)
-
-Allows for updating the configuration of an existing entrypoint.
 
 ```bash
 stateless-cli entrypoints update <entrypoint_id>
 ```
-The CLI will prompt the user to select an entrypoint and then provide options to update its URL.
- 
-#### With a JSON Configuration File
-
-```bash
-stateless-cli entrypoints update <entrypoint_id> --config_file <path_to_config_file>
-```
+Allows for updating the configuration of an existing entrypoint. The CLI will prompt the user to select an entrypoint and then provide options to update its URL.
 
 ### Delete an entrypoint (Provider only)
 
