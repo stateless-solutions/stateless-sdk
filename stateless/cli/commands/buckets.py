@@ -116,7 +116,7 @@ def buckets_update(
         bucket_update = parse_config_file(config_file, BucketUpdate)
     else:
         name = inquirer.text(message="Enter the updated name of the bucket")
-        offering_ids = OfferingsManager._select_offerings()
+        offering_ids = OfferingsManager._select_offerings("Choose the offerings to associate with the bucket")
         bucket_update = BucketUpdate(name=name, offerings=offering_ids)
 
     response = make_request_with_api_key(
