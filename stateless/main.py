@@ -2,7 +2,6 @@ import time
 import webbrowser
 from typing import Annotated, Optional
 
-import toml
 from typer import Context, Exit, Option, Typer, confirm, secho
 
 from .cli.commands.api_keys import api_keys_app
@@ -36,16 +35,7 @@ ascii_art = r"""
  |_____/ \__\__,_|\__\___|_|\___||___/___/  \_____|______|_____|                                                        
 """  # noqa: W291
 
-
-def fetch_version_from_pyproject(file_path):
-    try:
-        with open(file_path, "r") as toml_file:
-            data = toml.load(toml_file)
-        return data["project"]["version"]
-    except Exception as e:
-        return str(e)
-
-__version__ = fetch_version_from_pyproject("pyproject.toml")
+__version__ = "0.0.4" # Keep this in sync with pyproject.toml
 
 def version_callback(value: bool):
     if value:
