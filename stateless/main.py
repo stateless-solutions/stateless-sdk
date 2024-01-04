@@ -1,8 +1,9 @@
-
 import time
 import webbrowser
+from typing import Annotated, Optional
 
-from typer import Context, Typer, confirm, secho
+import toml
+from typer import Context, Exit, Option, Typer, confirm, secho
 
 from .cli.commands.api_keys import api_keys_app
 from .cli.commands.buckets import buckets_app
@@ -36,8 +37,29 @@ ascii_art = r"""
 """  # noqa: W291
 
 
+def fetch_version_from_pyproject(file_path):
+    try:
+        with open(file_path, "r") as toml_file:
+            data = toml.load(toml_file)
+        return data["project"]["version"]
+    except Exception as e:
+        return str(e)
+
+__version__ = fetch_version_from_pyproject("pyproject.toml")
+
+def version_callback(value: bool):
+    if value:
+        print(f"Stateless CLI Version: {__version__}")
+        raise Exit()
+
+
 @app.callback(invoke_without_command=True)
-def main(ctx: Context):
+def main(
+    ctx: Context,
+    version: Annotated[
+        Optional[bool], Option("--version", callback=version_callback)
+    ] = None,
+):
     if ctx.invoked_subcommand is None:
         # ASCII Art Logo
         secho(ascii_art, fg="green")
@@ -55,22 +77,32 @@ def main(ctx: Context):
                 if not api_key:
                     return
                 else:
-                    response = make_request_with_api_key("GET", V1Routes.ACCOUNT_PROFILE)
+                    response = make_request_with_api_key(
+                        "GET", V1Routes.ACCOUNT_PROFILE
+                    )
                     json_response = response.json()
 
                     if response.status_code == 200:
-                        name: str  = json_response['name']
-                        account_type: str = json_response['account_type']
+                        name: str = json_response["name"]
+                        account_type: str = json_response["account_type"]
                         secho("You are logged in as: ", nl=False)
                         secho(f"{name} [{account_type.capitalize()}]", fg="yellow")
-                        secho("Explore our commands by running `stateless-cli --help`", fg="green")
+                        secho(
+                            "Explore our commands by running `stateless-cli --help`",
+                            fg="green",
+                        )
                     else:
-                        secho(f"Error getting account profile: {json_response['detail']}", fg="red")
+                        secho(
+                            f"Error getting account profile: {json_response['detail']}",
+                            fg="red",
+                        )
 
                 break
 
+
 def _main():
     app()
+
 
 if __name__ == "__main__":
     _main()
