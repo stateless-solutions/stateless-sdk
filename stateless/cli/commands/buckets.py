@@ -6,10 +6,10 @@ from rich.console import Console
 from rich.table import Table
 from typer import Argument, Option, Typer
 
-from .offerings import OfferingsManager
 from ..models.buckets import BucketCreate, BucketUpdate
 from ..routes import V1Routes
 from ..utils import make_request_with_api_key, parse_config_file
+from .offerings import OfferingsManager
 
 console = Console()
 buckets_app = Typer()
@@ -48,6 +48,10 @@ class BucketsManager:
 @buckets_app.command("list")
 def buckets_list():
     buckets = BucketsManager._get_buckets()
+    if not buckets or (isinstance(buckets, list) and len(buckets) == 0):
+        console.print("You've got no buckets! You can create one with `stateless-cli buckets create`.")
+        return
+        
     items = [
         (
             bucket["id"],

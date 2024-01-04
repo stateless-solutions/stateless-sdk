@@ -1,4 +1,4 @@
-import readline
+
 import time
 import webbrowser
 

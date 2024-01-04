@@ -16,7 +16,7 @@ entrypoints_app = Typer()
 class EntrypointsManager:
     @staticmethod
     def _get_offerings():
-        response = make_request_with_api_key("GET", V1Routes.LIST_ENTRYPOINTS)
+        response = make_request_with_api_key("GET", V1Routes.LIST_OFFERINGS)
         return response.json()["items"]
 
     @staticmethod
@@ -67,7 +67,6 @@ def entrypoint_create(config_file: Optional[str] = Option(None, "--config-file",
         answers = inquirer.prompt(questions)
         entrypoint_create = EntrypointCreate(url=answers["url"], offering_id=answers["offering"], region_id=answers["region"])
 
-    print(entrypoint_create.model_dump_json())
     response = make_request_with_api_key("POST", V1Routes.ENTRYPOINTS, entrypoint_create.model_dump_json())
     json_response = response.json()
 

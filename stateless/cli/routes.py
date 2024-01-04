@@ -16,7 +16,6 @@ class V1Routes:
     LIST_OFFERINGS = OFFERINGS + "/list"
 
     ENTRYPOINTS = BaseUrl.V1 + "/entrypoints"
-    LIST_ENTRYPOINTS = ENTRYPOINTS + "/list"
 
     API_KEYS = BaseUrl.V1 + "/api_keys"
     LIST_API_KEYS = API_KEYS + "/list"

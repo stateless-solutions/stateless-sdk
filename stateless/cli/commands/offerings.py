@@ -8,6 +8,7 @@ from typer import Argument, Option, Typer
 from ..models.offerings import OfferingCreate, OfferingUpdate
 from ..routes import V1Routes
 from ..utils import make_request_with_api_key, parse_config_file
+from .entrypoints import entrypoint_create
 
 console = Console()
 offerings_app = Typer()
@@ -102,11 +103,12 @@ def offerings_list():
         (
             item["id"],
             item["provider"]["name"],
+            item["chain"]["name"],
             str(len(item["entrypoints"])),
         )
         for item in offerings
     ]
-    OfferingsManager._print_table(items, ["ID", "Provider", "Entrypoints"])
+    OfferingsManager._print_table(items, ["ID", "Provider", "Chain", "Entrypoints"])
 
 
 @offerings_app.command("create")
@@ -138,7 +140,15 @@ def offerings_create(
     json_response = response.json()
 
     if response.status_code == 201:
-        console.print(f"Successfully created offering {json_response['id']}")
+        console.print(f"Your offering has been created successfully with ID: {json_response['id']}")
+        
+        add_entrypoints = inquirer.confirm(message="Would you like to add entrypoints to this offering now?", default=False)
+        
+        if add_entrypoints:
+            entrypoint_create(None)
+        else:
+            console.print("You can now add entrypoints to this offering with `stateless-cli entrypoints create`")
+        
     else:
         console.print(f"Error creating offering: {json_response['detail']}")
 
