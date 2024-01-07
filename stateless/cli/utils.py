@@ -14,12 +14,9 @@ console = Console()
 def get_api_key_from_env():
     api_key = os.environ.get("STATELESS_API_KEY")
     if not api_key:
-        secho("API key not found in environment variables!", fg="red")
-        secho("Please set your API key in the environment variable STATELESS_API_KEY.", fg="red")
-        raise Exit(1)
-
+        secho("API key not found in environment variables! Please set your API key in the environment variable STATELESS_API_KEY.", fg="red")
+        return
     return api_key
-
 
 def make_request_with_api_key(
     method: str, url: str, data: str = None
