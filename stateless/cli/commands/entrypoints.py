@@ -4,11 +4,11 @@ import inquirer
 import ujson
 from rich.console import Console
 from rich.table import Table
-from typer import Argument, Option, Typer
+from typer import Argument, Option, Typer, Exit
 
 from ..models.entrypoints import EntrypointCreate, EntrypointUpdate
 from ..routes import V1Routes
-from ..utils import make_request_with_api_key, parse_config_file
+from ..utils import make_request_with_api_key, parse_config_file, secho
 
 console = Console()
 entrypoints_app = Typer()
@@ -17,7 +17,12 @@ class EntrypointsManager:
     @staticmethod
     def _get_offerings():
         response = make_request_with_api_key("GET", V1Routes.LIST_OFFERINGS)
-        return response.json()["items"]
+        offerings = response.json().get("items")
+        if not offerings:
+            raise Exit(secho(
+                    f"You dont have any offerings, please add an offering by running `stateless-cli offerings --help`",
+                    fg="red"))
+        return offerings
 
     @staticmethod
     def _get_regions():
@@ -120,7 +125,12 @@ def entrypoint_delete(entrypoint_id: Optional[str] = Argument(None, help="The UU
 
 @entrypoints_app.command("list")
 def entrypoint_list(offering_id: Optional[str] = Argument(None, help="The UUID of the offering to list entrypoints for.")):
-    offering_id = offering_id or EntrypointsManager._select_entrypoint("Which offering would you like to list entrypoints for?")
+    offerings = [(item["chain"]["name"], item["id"]) for item in EntrypointsManager._get_offerings()]
+    questions = [
+            inquirer.List("offering", message="Which offering would you like to list entrypoints for?", choices=offerings, carousel=True)
+        ]
+    answers = inquirer.prompt(questions)
+    offering_id = offering_id or answers["offering"]
     response = make_request_with_api_key("GET", f"{V1Routes.OFFERINGS}/{offering_id}")
     json_response = response.json()
 

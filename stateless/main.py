@@ -54,41 +54,30 @@ def main(
         # ASCII Art Logo
         secho(ascii_art, fg="green")
 
-        while True:
-            has_api_key = confirm("Do you have an API key to proceed?")
-
-            if not has_api_key:
-                secho("Redirecting to the API key registration page...", fg="red")
+        if not get_api_key_from_env():
+            if confirm("Do you need an API key to proceed?"):
+                secho("Redirecting to the API key registration page, afterwards please add it to your environment variables...", fg="red")
                 webbrowser.open("https://app.stateless.solutions")
-                secho("Waiting for a few seconds before asking again...", fg="yellow")
-                time.sleep(5)
+        else:
+            response = make_request_with_api_key(
+                "GET", V1Routes.ACCOUNT_PROFILE
+            )
+            json_response = response.json()
+
+            if response.status_code == 200:
+                name: str = json_response["name"]
+                account_type: str = json_response["account_type"]
+                secho("You are logged in as: ", nl=False)
+                secho(f"{name} [{account_type.capitalize()}]", fg="yellow")
+                secho(
+                    "Explore our commands by running `stateless-cli --help`",
+                    fg="green",
+                )
             else:
-                api_key = get_api_key_from_env()
-                if not api_key:
-                    return
-                else:
-                    response = make_request_with_api_key(
-                        "GET", V1Routes.ACCOUNT_PROFILE
-                    )
-                    json_response = response.json()
-
-                    if response.status_code == 200:
-                        name: str = json_response["name"]
-                        account_type: str = json_response["account_type"]
-                        secho("You are logged in as: ", nl=False)
-                        secho(f"{name} [{account_type.capitalize()}]", fg="yellow")
-                        secho(
-                            "Explore our commands by running `stateless-cli --help`",
-                            fg="green",
-                        )
-                    else:
-                        secho(
-                            f"Error getting account profile: {json_response['detail']}",
-                            fg="red",
-                        )
-
-                break
-
+                secho(
+                    f"Error getting account profile: {json_response['detail']}",
+                    fg="red",
+                )
 
 def _main():
     app()
