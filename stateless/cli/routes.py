@@ -27,4 +27,4 @@ class V1Routes:
     LIST_PROVIDERS = PROVIDERS + "/list"
 
     REGIONS = BaseUrl.V1 + "/regions"
-    LIST_REGIONS = REGIONS + "/list"
+    LIST_REGIONS = REGIONS + "/"
