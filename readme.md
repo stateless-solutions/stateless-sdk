@@ -7,7 +7,7 @@ The Stateless CLI is a powerful command-line interface that allows you to intera
 
 ### Prerequisites
 Before installing the CLI, ensure you have the following:
-- Python 3.6 or newer
+- Python 3.10 or newer
 - pip installed (Python's package installer)
 
 ### Installation Steps
