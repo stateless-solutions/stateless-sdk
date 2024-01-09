@@ -197,7 +197,7 @@ Entrypoints are specific URLs or access points that applications use to send req
 
 ## Commands
 
-### List all entrypoints
+### List all entrypoints (Provider only)
 
 ```bash
 stateless-cli entrypoints list
@@ -205,7 +205,7 @@ stateless-cli entrypoints list
 
 Retrieves and lists all entrypoints associated with a specific offering. Users can view a table displaying each entrypoint's ID, URL, and associated region.
 
-### Retrieve an entrypoint
+### Retrieve an entrypoint (Provider only)
 
 ```bash
 stateless-cli entrypoints get <entrypoint_id>
