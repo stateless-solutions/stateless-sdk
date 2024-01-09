@@ -193,7 +193,12 @@ stateless-cli buckets delete <bucket_id>
 This command provides the functionality to remove a Bucket from an account. The user will be prompted to select a bucket for deletion. Please note that this action will permanently delete the specified Bucket resource and all its associated data. A confirmation message will be displayed upon successful deletion.
 
 ## Entrypoints
-Entrypoints are specific URLs or access points that applications use to send requests to data providers. Managing entrypoints is essential for providers to control how and where their data is accessed. This set of CLI commands is intended for providers to manage entrypoints, whereas applications utilize these entrypoints to interact with providers' data.
+
+Entrypoints are specific URLs or access points that data providers use to
+provide access to an individual offering. Managing entrypoints is essential for
+providers to control how and where their data is accessed. This set of CLI
+commands is intended for providers to manage entrypoints, these details are
+managed by the service and not relevant to the application's usage.
 
 ## Commands
 
