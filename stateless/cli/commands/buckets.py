@@ -31,7 +31,9 @@ class BucketsManager:
             )
         ]
         answers = inquirer.prompt(questions)
-        return answers["bucket"]
+        bucket_id = answers["bucket"]
+        chain_id = [bucket["chain_id"] for bucket in buckets if bucket["id"] == bucket_id][0]
+        return bucket_id, chain_id
 
     @staticmethod
     def _print_table(items, columns):
@@ -51,7 +53,7 @@ def buckets_list():
     if not buckets or (isinstance(buckets, list) and len(buckets) == 0):
         console.print("You've got no buckets! You can create one with `stateless-cli buckets create`.")
         return
-        
+
     items = [
         (
             bucket["id"],
@@ -84,11 +86,11 @@ def buckets_create(config_file: Optional[str] = Option(None, "--config-file", "-
             )
         ]
         answers = inquirer.prompt(questions)
-        
+
         name = answers["name"]
         chain_id = answers["chain_id"]
-        
-        offering_ids = OfferingsManager._select_offerings("Choose the offerings to associate with the bucket")
+
+        offering_ids = OfferingsManager._select_offerings("Choose the offerings to associate with the bucket", int(chain_id))
         bucket_create = BucketCreate(
             name=name, chain_id=chain_id, offerings=offering_ids
         )
@@ -110,13 +112,13 @@ def buckets_update(
     config_file: Optional[str] = Option(None, "--config-file", "-c"),
 ):
     if not bucket_id:
-        bucket_id = BucketsManager._select_bucket("Choose the bucket to update")
+        bucket_id, chain_id = BucketsManager._select_bucket("Choose the bucket to update")
 
     if config_file:
         bucket_update = parse_config_file(config_file, BucketUpdate)
     else:
         name = inquirer.text(message="Enter the updated name of the bucket")
-        offering_ids = OfferingsManager._select_offerings("Choose the offerings to associate with the bucket")
+        offering_ids = OfferingsManager._select_offerings("Choose the offerings to associate with the bucket", int(chain_id))
         bucket_update = BucketUpdate(name=name, offerings=offering_ids)
 
     response = make_request_with_api_key(
@@ -135,7 +137,7 @@ def buckets_get(
     bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to get."),
 ):
     if not bucket_id:
-        bucket_id = BucketsManager._select_bucket("Choose the bucket to get")
+        bucket_id, _ = BucketsManager._select_bucket("Choose the bucket to get")
 
     response = make_request_with_api_key("GET", f"{V1Routes.BUCKETS}/{bucket_id}")
     json_response = response.json()
@@ -151,7 +153,7 @@ def buckets_delete(
     bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to delete."),
 ):
     if not bucket_id:
-        bucket_id = BucketsManager._select_bucket("Choose the bucket to delete")
+        bucket_id, _ = BucketsManager._select_bucket("Choose the bucket to delete")
 
     response = make_request_with_api_key("DELETE", f"{V1Routes.BUCKETS}/{bucket_id}")
 
