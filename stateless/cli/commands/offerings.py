@@ -16,15 +16,18 @@ offerings_app = Typer()
 
 class OfferingsManager:
     @staticmethod
-    def _get_offerings():
+    def _get_offerings(chain_id: Optional[int] = None):
         response = make_request_with_api_key("GET", V1Routes.LIST_OFFERINGS)
-        return response.json()["items"]
+        offerings =response.json()["items"]
+        if chain_id:
+            offerings = [offering for offering in offerings if int(offering["chain_id"]) == chain_id]
+        return offerings
 
     @staticmethod
-    def _select_offering(prompt_message):
+    def _select_offering(prompt_message, chain_id=None):
         offerings = [
             (f"{item['chain']['name']} - {item['provider']['name']}", item["id"])
-            for item in OfferingsManager._get_offerings()
+            for item in OfferingsManager._get_offerings(chain_id)
         ]
         questions = [
             inquirer.List(
@@ -38,8 +41,8 @@ class OfferingsManager:
         return answers["offering"]
 
     @staticmethod
-    def _select_offerings(prompt_message):
-        offerings = OfferingsManager._get_offerings()
+    def _select_offerings(prompt_message, chain_id=None):
+        offerings = OfferingsManager._get_offerings(chain_id)
         choices = [
             (
                 "{}".format(offering['provider']['name']),
@@ -53,6 +56,7 @@ class OfferingsManager:
         answers = inquirer.prompt(questions)
 
         return answers["offerings"]
+
 
     @staticmethod
     def _print_table(items, columns):
@@ -141,14 +145,14 @@ def offerings_create(
 
     if response.status_code == 201:
         console.print(f"Your offering has been created successfully with ID: {json_response['id']}")
-        
+
         add_entrypoints = inquirer.confirm(message="Would you like to add entrypoints to this offering now?", default=False)
-        
+
         if add_entrypoints:
             entrypoint_create(None)
         else:
             console.print("You can now add entrypoints to this offering with `stateless-cli entrypoints create`")
-        
+
     else:
         console.print(f"Error creating offering: {json_response['detail']}")
 
