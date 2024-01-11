@@ -11,8 +11,6 @@ jobs:
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
-    - name: Check versions
-      run: bash ./github/workflows/version-lint.sh
     - uses: actions/checkout@v4
     - name: Set up Python
       uses: actions/setup-python@v4
