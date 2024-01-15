@@ -41,7 +41,7 @@ class OfferingsManager:
         return answers["offering"]
 
     @staticmethod
-    def _select_offerings(prompt_message, chain_id=None):
+    def _select_offerings(prompt_message, chain_id=None, selected_offerings=None):
         offerings = OfferingsManager._get_offerings(chain_id)
         choices = [
             (
@@ -51,7 +51,7 @@ class OfferingsManager:
             for offering in offerings
         ]
         questions = [
-            inquirer.Checkbox("offerings", message=prompt_message, choices=choices)
+            inquirer.Checkbox("offerings", message=prompt_message, choices=choices, default=selected_offerings, carousel=True)
         ]
         answers = inquirer.prompt(questions)
 

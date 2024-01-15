@@ -1,7 +1,6 @@
 from typing import Optional
 
 import inquirer
-import ujson
 from rich.console import Console
 from rich.table import Table
 from typer import Argument, Option, Typer
@@ -27,13 +26,15 @@ class BucketsManager:
         choices = [(bucket["name"], bucket["id"]) for bucket in buckets]
         questions = [
             inquirer.List(
-                "bucket", message=prompt_message, choices=choices, carousel=True
+                "bucket_id", message=prompt_message, choices=choices, carousel=True
             )
         ]
         answers = inquirer.prompt(questions)
-        bucket_id = answers["bucket"]
-        chain_id = [bucket["chain_id"] for bucket in buckets if bucket["id"] == bucket_id][0]
-        return bucket_id, chain_id
+        bucket_id = answers["bucket_id"]
+
+        bucket = next((bucket for bucket in buckets if bucket["id"] == bucket_id), None)
+
+        return bucket
 
     @staticmethod
     def _print_table(items, columns):
@@ -51,7 +52,9 @@ class BucketsManager:
 def buckets_list():
     buckets = BucketsManager._get_buckets()
     if not buckets or (isinstance(buckets, list) and len(buckets) == 0):
-        console.print("You've got no buckets! You can create one with `stateless-cli buckets create`.")
+        console.print(
+            "You've got no buckets! You can create one with `stateless-cli buckets create`."
+        )
         return
 
     items = [
@@ -59,7 +62,9 @@ def buckets_list():
             bucket["id"],
             bucket["name"],
             bucket["chain"]["name"],
-            "\n".join([f"{offering['provider']['name']}" for offering in bucket["offerings"]]),
+            "\n".join(
+                [f"{offering['provider']['name']}" for offering in bucket["offerings"]]
+            ),
         )
         for bucket in buckets
     ]
@@ -83,14 +88,16 @@ def buckets_create(config_file: Optional[str] = Option(None, "--config-file", "-
                 message="Choose a blockchain for this bucket",
                 choices=chains,
                 carousel=True,
-            )
+            ),
         ]
         answers = inquirer.prompt(questions)
 
         name = answers["name"]
         chain_id = answers["chain_id"]
 
-        offering_ids = OfferingsManager._select_offerings("Choose the offerings to associate with the bucket", int(chain_id))
+        offering_ids = OfferingsManager._select_offerings(
+            "Choose the offerings to associate with the bucket", int(chain_id)
+        )
         bucket_create = BucketCreate(
             name=name, chain_id=chain_id, offerings=offering_ids
         )
@@ -112,13 +119,23 @@ def buckets_update(
     config_file: Optional[str] = Option(None, "--config-file", "-c"),
 ):
     if not bucket_id:
-        bucket_id, chain_id = BucketsManager._select_bucket("Choose the bucket to update")
+        bucket = BucketsManager._select_bucket(
+            "Choose the bucket to update"
+        )
+        bucket_id = bucket["id"]
+        bucket_name = bucket["name"]
+        bucket_chain_id = bucket["chain"]["chain_id"]
+        bucket_offerings_ids = [
+            offering["id"] for offering in bucket["offerings"]
+        ]
 
     if config_file:
         bucket_update = parse_config_file(config_file, BucketUpdate)
     else:
-        name = inquirer.text(message="Enter the updated name of the bucket")
-        offering_ids = OfferingsManager._select_offerings("Choose the offerings to associate with the bucket", int(chain_id))
+        name = inquirer.text(message="Enter the updated name of the bucket", default=bucket_name)
+        offering_ids = OfferingsManager._select_offerings(
+            "Choose the offerings to associate with the bucket", int(bucket_chain_id), bucket_offerings_ids
+        )
         bucket_update = BucketUpdate(name=name, offerings=offering_ids)
 
     response = make_request_with_api_key(
@@ -137,13 +154,30 @@ def buckets_get(
     bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to get."),
 ):
     if not bucket_id:
-        bucket_id, _ = BucketsManager._select_bucket("Choose the bucket to get")
+        bucket = BucketsManager._select_bucket("Choose the bucket to get")
+        bucket_id = bucket["id"]
 
     response = make_request_with_api_key("GET", f"{V1Routes.BUCKETS}/{bucket_id}")
     json_response = response.json()
 
     if response.status_code == 200:
-        console.print(ujson.dumps(json_response, indent=2))
+        # Display table with bucket info
+        items = [
+            (
+                bucket["id"],
+                bucket["name"],
+                bucket["chain"]["name"],
+                "\n".join(
+                    [
+                        f"{offering['provider']['name']}"
+                        for offering in bucket["offerings"]
+                    ]
+                ),
+            )
+            for bucket in [json_response]
+        ]
+
+        BucketsManager._print_table(items, ["ID", "Name", "Chain", "Offerings"])
     else:
         console.print(f"Error getting bucket: {json_response['detail']}")
 
@@ -153,7 +187,8 @@ def buckets_delete(
     bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to delete."),
 ):
     if not bucket_id:
-        bucket_id, _ = BucketsManager._select_bucket("Choose the bucket to delete")
+        bucket = BucketsManager._select_bucket("Choose the bucket to delete")
+        bucket_id = bucket["id"]
 
     response = make_request_with_api_key("DELETE", f"{V1Routes.BUCKETS}/{bucket_id}")
 
