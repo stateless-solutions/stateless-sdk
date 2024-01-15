@@ -1,4 +1,3 @@
-import time
 import webbrowser
 from typing import Annotated, Optional
 

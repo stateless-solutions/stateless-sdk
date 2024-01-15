@@ -8,15 +8,39 @@ from pydantic import BaseModel, ValidationError
 from rich.console import Console
 from typer import Exit, secho
 
+from .routes import V1Routes
+
 console = Console()
 
 
 def get_api_key_from_env():
     api_key = os.environ.get("STATELESS_API_KEY")
     if not api_key:
-        secho("API key not found in environment variables! Please set your API key in the environment variable STATELESS_API_KEY.", fg="red")
+        secho(
+            "API key not found in environment variables! Please set your API key in the environment variable STATELESS_API_KEY.",
+            fg="red",
+        )
         return
     return api_key
+
+
+def get_account_type():
+    response = make_request_with_api_key("GET", V1Routes.ACCOUNT_PROFILE)
+    json_response = response.json()
+
+    if response.status_code == 200:
+        return json_response["account_type"]
+
+
+def provider_guard():
+    if get_account_type() != "provider":
+        console.print("You must be logged in as a provider to use this command.")
+        raise Exit()
+
+def user_guard():
+    if get_account_type() != "user":
+        console.print("You must be logged in as a user to use this command.")
+        raise Exit()
 
 def make_request_with_api_key(
     method: str, url: str, data: str = None

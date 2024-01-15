@@ -7,7 +7,7 @@ from typer import Argument, Option, Typer
 
 from ..models.buckets import BucketCreate, BucketUpdate
 from ..routes import V1Routes
-from ..utils import make_request_with_api_key, parse_config_file
+from ..utils import make_request_with_api_key, parse_config_file, user_guard
 from .offerings import OfferingsManager
 
 console = Console()
@@ -50,6 +50,7 @@ class BucketsManager:
 
 @buckets_app.command("list")
 def buckets_list():
+    user_guard()
     buckets = BucketsManager._get_buckets()
     if not buckets or (isinstance(buckets, list) and len(buckets) == 0):
         console.print(
@@ -73,6 +74,7 @@ def buckets_list():
 
 @buckets_app.command("create")
 def buckets_create(config_file: Optional[str] = Option(None, "--config-file", "-c")):
+    user_guard()
     if config_file:
         bucket_create = parse_config_file(config_file, BucketCreate)
     else:
@@ -118,6 +120,7 @@ def buckets_update(
     bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to update."),
     config_file: Optional[str] = Option(None, "--config-file", "-c"),
 ):
+    user_guard()
     if not bucket_id:
         bucket = BucketsManager._select_bucket(
             "Choose the bucket to update"
@@ -149,12 +152,13 @@ def buckets_update(
         console.print(f"Error updating bucket: {json_response['detail']}")
 
 
-@buckets_app.command("get")
+@buckets_app.command("view")
 def buckets_get(
-    bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to get."),
+    bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to view."),
 ):
+    user_guard()
     if not bucket_id:
-        bucket = BucketsManager._select_bucket("Choose the bucket to get")
+        bucket = BucketsManager._select_bucket("Choose the bucket to view")
         bucket_id = bucket["id"]
 
     response = make_request_with_api_key("GET", f"{V1Routes.BUCKETS}/{bucket_id}")
@@ -186,6 +190,7 @@ def buckets_get(
 def buckets_delete(
     bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to delete."),
 ):
+    user_guard()
     if not bucket_id:
         bucket = BucketsManager._select_bucket("Choose the bucket to delete")
         bucket_id = bucket["id"]

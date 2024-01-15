@@ -1,11 +1,12 @@
-from typer import Typer, Option, Argument, prompt
 from typing import Optional
+
 from rich.console import Console
 from rich.table import Table
+from typer import Argument, Option, Typer, prompt
 
+from ..models.regions import RegionCreate, RegionUpdate
 from ..routes import V1Routes
 from ..utils import make_request_with_api_key, parse_config_file
-from ..models.regions import RegionCreate, RegionUpdate
 
 console = Console()
 regions_app = Typer()
@@ -38,12 +39,12 @@ def create_region(
         console.print(f"Error creating region: {json_response['detail']}")
 
 
-@regions_app.command("get")
+@regions_app.command("view")
 def get_region(
-    region_id: Optional[str] = Argument(None, help="The ID of the region to get.")
+    region_id: Optional[str] = Argument(None, help="The ID of the region to view.")
 ):
     if not region_id:
-        region_id = prompt("Enter the ID of the region to get")
+        region_id = prompt("Enter the ID of the region to view")
 
     response = make_request_with_api_key("GET", f"{V1Routes.REGIONS}/{region_id}")
 

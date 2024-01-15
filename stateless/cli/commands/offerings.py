@@ -7,7 +7,7 @@ from typer import Argument, Option, Typer
 
 from ..models.offerings import OfferingCreate, OfferingUpdate
 from ..routes import V1Routes
-from ..utils import make_request_with_api_key, parse_config_file
+from ..utils import make_request_with_api_key, parse_config_file, provider_guard
 from .entrypoints import entrypoint_create
 
 console = Console()
@@ -18,9 +18,13 @@ class OfferingsManager:
     @staticmethod
     def _get_offerings(chain_id: Optional[int] = None):
         response = make_request_with_api_key("GET", V1Routes.LIST_OFFERINGS)
-        offerings =response.json()["items"]
+        offerings = response.json()["items"]
         if chain_id:
-            offerings = [offering for offering in offerings if int(offering["chain_id"]) == chain_id]
+            offerings = [
+                offering
+                for offering in offerings
+                if int(offering["chain_id"]) == chain_id
+            ]
         return offerings
 
     @staticmethod
@@ -45,18 +49,23 @@ class OfferingsManager:
         offerings = OfferingsManager._get_offerings(chain_id)
         choices = [
             (
-                "{}".format(offering['provider']['name']),
+                "{}".format(offering["provider"]["name"]),
                 offering["id"],
             )
             for offering in offerings
         ]
         questions = [
-            inquirer.Checkbox("offerings", message=prompt_message, choices=choices, default=selected_offerings, carousel=True)
+            inquirer.Checkbox(
+                "offerings",
+                message=prompt_message,
+                choices=choices,
+                default=selected_offerings,
+                carousel=True,
+            )
         ]
         answers = inquirer.prompt(questions)
 
         return answers["offerings"]
-
 
     @staticmethod
     def _print_table(items, columns):
@@ -70,10 +79,10 @@ class OfferingsManager:
         console.print(table)
 
 
-@offerings_app.command("detail")
+@offerings_app.command("view")
 def offerings_detail(id: Optional[str] = Argument(None)):
     offering_id = id or OfferingsManager._select_offering(
-        "Which offering would you like to list entrypoints for?"
+        "Which offering would you like to view?"
     )
     response = make_request_with_api_key("GET", f"{V1Routes.OFFERINGS}/{offering_id}")
 
@@ -103,22 +112,27 @@ def offerings_detail(id: Optional[str] = Argument(None)):
 @offerings_app.command("list")
 def offerings_list():
     offerings = OfferingsManager._get_offerings()
+
     items = [
         (
             item["id"],
             item["provider"]["name"],
             item["chain"]["name"],
             str(len(item["entrypoints"])),
+            str(", ".join({entrypoint["region"]["name"] for entrypoint in item["entrypoints"] if "region" in entrypoint}))
         )
         for item in offerings
     ]
-    OfferingsManager._print_table(items, ["ID", "Provider", "Chain", "Entrypoints"])
+    OfferingsManager._print_table(
+        items, ["ID", "Provider", "Chain", "Entrypoints", "Regions"]
+    )
 
 
 @offerings_app.command("create")
 def offerings_create(
     config_file: Optional[str] = Option(None, "--config-file", "-c"),
 ):
+    provider_guard()
     if config_file:
         offering_create = parse_config_file(config_file, OfferingCreate)
     else:
@@ -144,14 +158,21 @@ def offerings_create(
     json_response = response.json()
 
     if response.status_code == 201:
-        console.print(f"Your offering has been created successfully with ID: {json_response['id']}")
+        console.print(
+            f"Your offering has been created successfully with ID: {json_response['id']}"
+        )
 
-        add_entrypoints = inquirer.confirm(message="Would you like to add entrypoints to this offering now?", default=False)
+        add_entrypoints = inquirer.confirm(
+            message="Would you like to add entrypoints to this offering now?",
+            default=False,
+        )
 
         if add_entrypoints:
             entrypoint_create(None)
         else:
-            console.print("You can now add entrypoints to this offering with `stateless-cli entrypoints create`")
+            console.print(
+                "You can now add entrypoints to this offering with `stateless-cli entrypoints create`"
+            )
 
     else:
         console.print(f"Error creating offering: {json_response['detail']}")
@@ -169,6 +190,7 @@ def offerings_update(
         help="The path to a JSON file with the update data.",
     ),
 ):
+    provider_guard()
     offering_id = offering_id or OfferingsManager._select_offering(
         "Which offering would you like to update?"
     )
@@ -204,6 +226,7 @@ def offerings_delete(
         None, help="The UUID of the offering to delete."
     ),
 ):
+    provider_guard()
     offering_id = offering_id or OfferingsManager._select_offering(
         "Which offering would you like to delete?"
     )

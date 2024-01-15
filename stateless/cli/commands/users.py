@@ -1,11 +1,12 @@
 from typing import Optional
-from typer import Typer, Option, Argument, prompt
+
 from rich.console import Console
 from rich.table import Table
+from typer import Argument, Option, Typer, prompt
 
+from ..models.users import UserCreate
 from ..routes import V1Routes
 from ..utils import make_request_with_api_key, parse_config_file
-from ..models.users import UserCreate
 
 console = Console()
 users_app = Typer()
@@ -55,12 +56,12 @@ def get_current_user():
         console.print(f"Error getting current user: {json_response['detail']}")
 
 
-@users_app.command("get")
+@users_app.command("view")
 def get_user(
-    user_id: Optional[str] = Argument(None, help="The ID of the user to get.")
+    user_id: Optional[str] = Argument(None, help="The ID of the user to view.")
 ):
     if not user_id:
-        user_id = prompt("Enter the ID of the user to get")
+        user_id = prompt("Enter the ID of the user to view")
 
     response = make_request_with_api_key("GET", f"{V1Routes.USERS}/{user_id}")
     json_response = response.json()

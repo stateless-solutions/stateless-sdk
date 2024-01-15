@@ -76,12 +76,12 @@ def update_chain(
         return
 
 
-@chains_app.command("get")
+@chains_app.command("view")
 def get_chain(
-    chain_id: Optional[int] = Argument(None, help="The ID of the chain to get.")
+    chain_id: Optional[int] = Argument(None, help="The ID of the chain to view.")
 ):
     if chain_id is None:
-        chain_id = prompt("Enter the ID of the chain to get", type=int)
+        chain_id = prompt("Enter the ID of the chain to view", type=int)
 
     try:
         response = make_request_with_api_key("GET", f"{V1Routes.CHAINS}/{chain_id}")

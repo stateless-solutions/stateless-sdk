@@ -6,11 +6,10 @@ from typer import Argument, Option, Typer, prompt
 
 from ..models.providers import ProviderCreate
 from ..routes import V1Routes
-from ..utils import make_request_with_api_key, parse_config_file
+from ..utils import make_request_with_api_key, parse_config_file, provider_guard
 
 console = Console()
 providers_app = Typer()
-
 
 @providers_app.command("create")
 def create_provider(
@@ -21,6 +20,8 @@ def create_provider(
         help="The path to a JSON file with the provider creation data.",
     ),
 ):
+    provider_guard()
+    
     if config_file:
         provider_create = parse_config_file(config_file, ProviderCreate)
     else:
@@ -50,12 +51,14 @@ def create_provider(
         console.print(f"Error creating provider: {json_response['detail']}")
 
 
-@providers_app.command("get")
+@providers_app.command("view")
 def get_provider(
-    provider_id: Optional[str] = Argument(None, help="The ID of the provider to get.")
+    provider_id: Optional[str] = Argument(None, help="The ID of the provider to view.")
 ):
+    provider_guard()
+    
     if not provider_id:
-        provider_id = prompt("Enter the ID of the provider to get")
+        provider_id = prompt("Enter the ID of the provider to view")
 
     response = make_request_with_api_key("GET", f"{V1Routes.PROVIDERS}/{provider_id}")
 
@@ -89,6 +92,7 @@ def delete_provider(
         None, help="The ID of the provider to delete."
     ),
 ):
+    provider_guard()
     if not provider_id:
         provider_id = prompt("Enter the ID of the provider to delete")
 

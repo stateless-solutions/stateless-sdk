@@ -55,8 +55,7 @@ def create_api_key(config_file: Optional[str] = Option(None, "--config-file", "-
         )
         expiration_date = datetime.now() + timedelta(days=int(expiration_days))
         expires_at = expiration_date.strftime("%Y-%m-%d %H:%M:%S")
-        api_key_create = APIKeyCreate(name=name, expires_at=expires_at
-        )
+        api_key_create = APIKeyCreate(name=name, expires_at=expires_at)
 
     response = make_request_with_api_key(
         "POST", V1Routes.API_KEYS, api_key_create.model_dump_json()
@@ -107,16 +106,28 @@ def update_api_key(
         console.print(f"Error updating API key: {json_response['detail']}")
 
 
-@api_keys_app.command("get")
+@api_keys_app.command("view")
 def get_api_key(
-    api_key_id: Optional[str] = Argument(None, help="The UUID of the API key to get."),
+    api_key_id: Optional[str] = Argument(None, help="The UUID of the API key to view."),
 ):
-    api_key_id = APIKeysManager._select_api_key("Choose the API key to get")
+    api_key_id = APIKeysManager._select_api_key("Choose the API key to view")
     response = make_request_with_api_key("GET", f"{V1Routes.API_KEYS}/{api_key_id}")
     json_response = response.json()
 
     if response.status_code == 200:
-        console.print(json_response)
+        items = [
+            (
+                api_key["id"],
+                api_key["name"],
+                api_key["prefix"],
+                api_key["expires_at"],
+                api_key["created_at"],
+            )
+            for api_key in [json_response]
+        ]
+        APIKeysManager._print_table(
+            items, ["ID", "Name", "Prefix", "Expires At", "Created At"]
+        )
     else:
         console.print(f"Error getting API key: {json_response['detail']}")
 
