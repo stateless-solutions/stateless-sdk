@@ -7,7 +7,12 @@ from typer import Argument, Option, Typer
 
 from ..models.buckets import BucketCreate, BucketUpdate
 from ..routes import V1Routes
-from ..utils import make_request_with_api_key, parse_config_file, user_guard
+from ..utils import (
+    get_route_by_chain_id,
+    make_request_with_api_key,
+    parse_config_file,
+    user_guard,
+)
 from .offerings import OfferingsManager
 
 console = Console()
@@ -66,6 +71,7 @@ def buckets_list():
             "\n".join(
                 [f"{offering['provider']['name']}" for offering in bucket["offerings"]]
             ),
+            f"https://api.stateless.solutions/{get_route_by_chain_id(int(bucket['chain_id']))}/v1/{bucket['id']}",
         )
         for bucket in buckets
     ]
@@ -110,7 +116,10 @@ def buckets_create(config_file: Optional[str] = Option(None, "--config-file", "-
     json_response = response.json()
 
     if response.status_code == 201:
-        console.print(f"Successfully created bucket {json_response['id']}")
+        chain_route = get_route_by_chain_id(int(chain_id))
+        console.print(
+            f"Your bucket has been created, and your URL is: https://api.stateless.solutions/{chain_route}/v1/{json_response['id']}"
+        )
     else:
         console.print(f"Error creating bucket: {json_response['detail']}")
 
@@ -122,22 +131,22 @@ def buckets_update(
 ):
     user_guard()
     if not bucket_id:
-        bucket = BucketsManager._select_bucket(
-            "Choose the bucket to update"
-        )
+        bucket = BucketsManager._select_bucket("Choose the bucket to update")
         bucket_id = bucket["id"]
         bucket_name = bucket["name"]
         bucket_chain_id = bucket["chain"]["chain_id"]
-        bucket_offerings_ids = [
-            offering["id"] for offering in bucket["offerings"]
-        ]
+        bucket_offerings_ids = [offering["id"] for offering in bucket["offerings"]]
 
     if config_file:
         bucket_update = parse_config_file(config_file, BucketUpdate)
     else:
-        name = inquirer.text(message="Enter the updated name of the bucket", default=bucket_name)
+        name = inquirer.text(
+            message="Enter the updated name of the bucket", default=bucket_name
+        )
         offering_ids = OfferingsManager._select_offerings(
-            "Choose the offerings to associate with the bucket", int(bucket_chain_id), bucket_offerings_ids
+            "Choose the offerings to associate with the bucket",
+            int(bucket_chain_id),
+            bucket_offerings_ids,
         )
         bucket_update = BucketUpdate(name=name, offerings=offering_ids)
 
@@ -173,15 +182,16 @@ def buckets_get(
                 bucket["chain"]["name"],
                 "\n".join(
                     [
-                        f"{offering['provider']['name']}"
+                        f"{offering['provider']['name']} [{', '.join([entrypoint['region']['name'] for entrypoint in offering['entrypoints']])}]"
                         for offering in bucket["offerings"]
                     ]
                 ),
+                f"https://api.stateless.solutions/{get_route_by_chain_id(int(bucket['chain_id']))}/v1/{bucket['id']}",
             )
             for bucket in [json_response]
         ]
 
-        BucketsManager._print_table(items, ["ID", "Name", "Chain", "Offerings"])
+        BucketsManager._print_table(items, ["ID", "Name", "Chain", "Offerings", "URL"])
     else:
         console.print(f"Error getting bucket: {json_response['detail']}")
 

@@ -1,6 +1,9 @@
 from datetime import datetime
+from typing import Optional
 
 from pydantic import UUID4, BaseModel, ConfigDict, Field
+
+from .regions import RegionFullResponse
 
 
 class EntrypointNoURLResponse(BaseModel):
@@ -8,6 +11,8 @@ class EntrypointNoURLResponse(BaseModel):
 
     offering_id: UUID4
     region_id: UUID4
+    
+    region: Optional[RegionFullResponse]
 
     created_at: datetime
     updated_at: datetime

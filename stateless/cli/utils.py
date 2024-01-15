@@ -12,6 +12,11 @@ from .routes import V1Routes
 
 console = Console()
 
+CHAINS_MAPPING = {
+    1: "ethereum",
+    137: "polygon",
+    10: "optimism",
+}
 
 def get_api_key_from_env():
     api_key = os.environ.get("STATELESS_API_KEY")
@@ -23,6 +28,8 @@ def get_api_key_from_env():
         return
     return api_key
 
+def get_route_by_chain_id(chain_id: int):
+    return CHAINS_MAPPING[chain_id]
 
 def get_account_type():
     response = make_request_with_api_key("GET", V1Routes.ACCOUNT_PROFILE)
