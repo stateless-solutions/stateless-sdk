@@ -2,30 +2,28 @@ from typing import Optional
 
 import inquirer
 from rich.console import Console
-from rich.table import Table
 from typer import Argument, Option, Typer
 
 from ..models.offerings import OfferingCreate, OfferingUpdate
 from ..routes import V1Routes
-from ..utils import make_request_with_api_key, parse_config_file, provider_guard
+from ..utils import (
+    BaseManager,
+    make_request_with_api_key,
+    parse_config_file,
+    provider_guard,
+)
 from .entrypoints import entrypoint_create
 
 console = Console()
 offerings_app = Typer()
 
 
-class OfferingsManager:
+class OfferingsManager(BaseManager):
     @staticmethod
-    def _get_offerings(chain_id: Optional[int] = None):
-        response = make_request_with_api_key("GET", V1Routes.LIST_OFFERINGS)
-        offerings = response.json()["items"]
-        if chain_id:
-            offerings = [
-                offering
-                for offering in offerings
-                if int(offering["chain_id"]) == chain_id
-            ]
-        return offerings
+    def _get_offerings(chain_id: Optional[int] = None, offset=0, limit=10):
+        return OfferingsManager.make_paginated_request(
+            V1Routes.LIST_OFFERINGS, offset, limit, params={"chain_id": chain_id}
+        )
 
     @staticmethod
     def _select_offering(prompt_message, chain_id=None):
@@ -67,17 +65,6 @@ class OfferingsManager:
 
         return answers["offerings"]
 
-    @staticmethod
-    def _print_table(items, columns):
-        table = Table(show_header=True, header_style="green", padding=(0, 1, 0, 1))
-        for col in columns:
-            table.add_column(col)
-
-        for item in items:
-            table.add_row(*item, end_section=True)
-
-        console.print(table)
-
 
 @offerings_app.command("view")
 def offerings_detail(id: Optional[str] = Argument(None)):
@@ -110,22 +97,53 @@ def offerings_detail(id: Optional[str] = Argument(None)):
 
 
 @offerings_app.command("list")
-def offerings_list():
-    offerings = OfferingsManager._get_offerings()
-
-    items = [
-        (
-            item["id"],
-            item["provider"]["name"],
-            item["chain"]["name"],
-            str(len(item["entrypoints"])),
-            str(", ".join({entrypoint["region"]["name"] for entrypoint in item["entrypoints"] if "region" in entrypoint}))
+def offerings_list(
+    limit: int = Option(10, help="Number of offerings per page."),
+    chain_id: Optional[int] = None,
+):
+    offset = 0
+    while True:
+        response = OfferingsManager._get_offerings(
+            chain_id=chain_id, offset=offset, limit=limit
         )
-        for item in offerings
-    ]
-    OfferingsManager._print_table(
-        items, ["ID", "Provider", "Chain", "Entrypoints", "Regions"]
-    )
+        offerings = response["items"]
+        total = response.get("total", 0)
+
+        items = [
+            (
+                offering["id"],
+                offering["provider"]["name"],
+                offering["chain"]["name"],
+                str(len(offering["entrypoints"])),
+                ", ".join(
+                    {
+                        entrypoint["region"]["name"]
+                        for entrypoint in offering["entrypoints"]
+                        if "region" in entrypoint
+                    }
+                ),
+            )
+            for offering in offerings
+        ]
+
+        OfferingsManager._print_table(
+            items, ["ID", "Provider", "Chain", "Entrypoints", "Regions"]
+        )
+
+        if not offerings or len(offerings) < limit or offset + limit >= total:
+            console.print("End of offerings list.")
+            break
+
+        navigate = inquirer.list_input(
+            "Navigate pages", choices=["Next", "Previous", "Exit"], carousel=True
+        )
+
+        if navigate == "Next":
+            offset += limit
+        elif navigate == "Previous" and offset - limit >= 0:
+            offset -= limit
+        else:
+            break
 
 
 @offerings_app.command("create")

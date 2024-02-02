@@ -24,8 +24,8 @@ class BaseManager:
     console = Console()
 
     @staticmethod
-    def make_paginated_request(route: str, offset=0, limit=10):
-        params = {"offset": offset, "limit": limit}
+    def make_paginated_request(route: str, offset=0, limit=10, params=None):
+        params = {"offset": offset, "limit": limit, **params}
         response = make_request_with_api_key("GET", route, params=params)
         return response.json()
 

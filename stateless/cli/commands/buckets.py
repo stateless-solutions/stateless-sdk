@@ -8,6 +8,7 @@ from typer import Argument, Option, Typer
 from ..models.buckets import BucketCreate, BucketUpdate
 from ..routes import V1Routes
 from ..utils import (
+    BaseManager,
     get_route_by_chain_id,
     make_request_with_api_key,
     parse_config_file,
@@ -19,11 +20,12 @@ console = Console()
 buckets_app = Typer()
 
 
-class BucketsManager:
+class BucketsManager(BaseManager):
     @staticmethod
-    def _get_buckets():
-        response = make_request_with_api_key("GET", V1Routes.LIST_BUCKETS)
-        return response.json()["items"]
+    def _get_buckets(offset=0, limit=10):
+        return BucketsManager.make_paginated_request(
+            V1Routes.LIST_BUCKETS, offset, limit
+        )
 
     @staticmethod
     def _select_bucket(prompt_message):
@@ -54,28 +56,53 @@ class BucketsManager:
 
 
 @buckets_app.command("list")
-def buckets_list():
+def buckets_list(limit: int = Option(10, help="Number of buckets per page.")):
     user_guard()
-    buckets = BucketsManager._get_buckets()
-    if not buckets or (isinstance(buckets, list) and len(buckets) == 0):
-        console.print(
-            "You've got no buckets! You can create one with `stateless-cli buckets create`."
+    offset = 0
+    while True:
+        response = BucketsManager._get_buckets(offset=offset, limit=limit)
+        buckets = response["items"]
+        total = response.get(
+            "total", len(buckets)
         )
-        return
 
-    items = [
-        (
-            bucket["id"],
-            bucket["name"],
-            bucket["chain"]["name"],
-            "\n".join(
-                [f"{offering['provider']['name']}" for offering in bucket["offerings"]]
-            ),
-            f"https://api.stateless.solutions/{get_route_by_chain_id(int(bucket['chain_id']))}/v1/{bucket['id']}",
+        if not buckets:
+            console.print(
+                "You've got no buckets! You can create one with `stateless-cli buckets create`."
+            )
+            break
+
+        items = [
+            (
+                bucket["id"],
+                bucket["name"],
+                bucket["chain"]["name"],
+                "\n".join(
+                    [
+                        f"{offering['provider']['name']}"
+                        for offering in bucket["offerings"]
+                    ]
+                ),
+                f"https://api.stateless.solutions/{get_route_by_chain_id(int(bucket['chain_id']))}/v1/{bucket['id']}",
+            )
+            for bucket in buckets
+        ]
+        BucketsManager._print_table(items, ["ID", "Name", "Chain", "Offerings", "URL"])
+
+        if len(buckets) < limit or offset + limit >= total:
+            console.print("End of buckets list.")
+            break
+
+        navigate = inquirer.list_input(
+            "Navigate pages", choices=["Next", "Previous", "Exit"], carousel=True
         )
-        for bucket in buckets
-    ]
-    BucketsManager._print_table(items, ["ID", "Name", "Chain", "Offerings"])
+
+        if navigate == "Next":
+            offset += limit
+        elif navigate == "Previous" and offset - limit >= 0:
+            offset -= limit
+        else:
+            break
 
 
 @buckets_app.command("create")
