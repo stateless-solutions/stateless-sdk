@@ -6,6 +6,7 @@ import httpx
 import ujson
 from pydantic import BaseModel, ValidationError
 from rich.console import Console
+from rich.table import Table
 from typer import Exit, secho
 
 from .routes import V1Routes
@@ -18,6 +19,28 @@ CHAINS_MAPPING = {
     10: "optimism",
 }
 
+
+class BaseManager:
+    console = Console()
+
+    @staticmethod
+    def make_paginated_request(route: str, offset=0, limit=10, params={}):
+        params = {"offset": offset, "limit": limit, **params}
+        response = make_request_with_api_key("GET", route, params=params)
+        return response.json()["items"]
+
+    @staticmethod
+    def _print_table(items, columns):
+        table = Table(show_header=True, header_style="green", padding=(0, 1, 0, 1))
+        for col in columns:
+            table.add_column(col)
+
+        for item in items:
+            table.add_row(*item, end_section=True)
+
+        console.print(table)
+
+
 def get_api_key_from_env():
     api_key = os.environ.get("STATELESS_API_KEY")
     if not api_key:
@@ -28,8 +51,10 @@ def get_api_key_from_env():
         return
     return api_key
 
+
 def get_route_by_chain_id(chain_id: int):
     return CHAINS_MAPPING[chain_id]
+
 
 def get_account_type():
     response = make_request_with_api_key("GET", V1Routes.ACCOUNT_PROFILE)
@@ -44,20 +69,22 @@ def provider_guard():
         console.print("You must be logged in as a provider to use this command.")
         raise Exit()
 
+
 def user_guard():
     if get_account_type() != "user":
         console.print("You must be logged in as a user to use this command.")
         raise Exit()
 
+
 def make_request_with_api_key(
-    method: str, url: str, data: str = None
+    method: str, url: str, data: str = None, params: dict = None
 ) -> httpx.Response:
     api_key = get_api_key_from_env()
     headers = {"X-API-KEY": api_key}
     try:
         with httpx.Client() as client:
             if method == "GET":
-                response = client.get(url, headers=headers)
+                response = client.get(url, headers=headers, params=params)
             elif method == "POST":
                 response = client.post(url, headers=headers, content=data)
             elif method == "DELETE":

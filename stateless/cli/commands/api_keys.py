@@ -3,22 +3,22 @@ from typing import Optional
 
 import inquirer
 from rich.console import Console
-from rich.table import Table
 from typer import Argument, Option, Typer
 
 from ..models.api_keys import APIKeyCreate, APIKeyUpdate
 from ..routes import V1Routes
-from ..utils import make_request_with_api_key, parse_config_file
+from ..utils import BaseManager, make_request_with_api_key, parse_config_file
 
 console = Console()
 api_keys_app = Typer()
 
 
-class APIKeysManager:
+class APIKeysManager(BaseManager):
     @staticmethod
-    def _get_api_keys():
-        response = make_request_with_api_key("GET", V1Routes.LIST_API_KEYS)
-        return response.json()["items"]
+    def _get_api_keys(offset=0, limit=10):
+        return APIKeysManager.make_paginated_request(
+            V1Routes.LIST_API_KEYS, offset, limit
+        )
 
     @staticmethod
     def _select_api_key(prompt_message):
@@ -31,17 +31,6 @@ class APIKeysManager:
         ]
         answers = inquirer.prompt(questions)
         return answers["api_key"]
-
-    @staticmethod
-    def _print_table(items, columns):
-        table = Table(show_header=True, header_style="green", padding=(0, 1, 0, 1))
-        for col in columns:
-            table.add_column(col)
-
-        for item in items:
-            table.add_row(*item, end_section=True)
-
-        console.print(table)
 
 
 @api_keys_app.command("create")
@@ -133,10 +122,30 @@ def get_api_key(
 
 
 @api_keys_app.command("list")
-def list_api_keys():
-    api_keys = APIKeysManager._get_api_keys()
-    items = [(key["id"], key["name"]) for key in api_keys]
-    APIKeysManager._print_table(items, ["ID", "Name"])
+def list_api_keys(limit: int = Option(10, help="Number of API keys per page.")):
+    offset = 0
+    while True:
+        response = APIKeysManager._get_api_keys(offset=offset, limit=limit)
+        api_keys = response["items"]
+        total = response.get("total", 0)
+
+        items = [(key["id"], key["name"]) for key in api_keys]
+        APIKeysManager._print_table(items, ["ID", "Name"])
+
+        if not api_keys or len(api_keys) < limit or offset + limit >= total:
+            console.print("End of API keys list.")
+            break
+
+        navigate = inquirer.list_input(
+            "Navigate pages", choices=["Next", "Previous", "Exit"], carousel=True
+        )
+
+        if navigate == "Next":
+            offset += limit
+        elif navigate == "Previous" and offset - limit >= 0:
+            offset -= limit
+        else:
+            break
 
 
 @api_keys_app.command("delete")

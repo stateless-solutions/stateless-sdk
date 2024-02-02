@@ -2,12 +2,12 @@ from typing import Optional
 
 import inquirer
 from rich.console import Console
-from rich.table import Table
 from typer import Argument, Option, Typer
 
 from ..models.buckets import BucketCreate, BucketUpdate
 from ..routes import V1Routes
 from ..utils import (
+    BaseManager,
     get_route_by_chain_id,
     make_request_with_api_key,
     parse_config_file,
@@ -19,11 +19,12 @@ console = Console()
 buckets_app = Typer()
 
 
-class BucketsManager:
+class BucketsManager(BaseManager):
     @staticmethod
-    def _get_buckets():
-        response = make_request_with_api_key("GET", V1Routes.LIST_BUCKETS)
-        return response.json()["items"]
+    def _get_buckets(offset=0, limit=10):
+        return BucketsManager.make_paginated_request(
+            V1Routes.LIST_BUCKETS, offset, limit
+        )
 
     @staticmethod
     def _select_bucket(prompt_message):
@@ -41,87 +42,117 @@ class BucketsManager:
 
         return bucket
 
-    @staticmethod
-    def _print_table(items, columns):
-        table = Table(show_header=True, header_style="green", padding=(0, 1, 0, 1))
-        for col in columns:
-            table.add_column(col)
-
-        for item in items:
-            table.add_row(*item, end_section=True)
-
-        console.print(table)
-
 
 @buckets_app.command("list")
-def buckets_list():
+def buckets_list(limit: int = Option(10, help="Number of buckets per page.")):
     user_guard()
-    buckets = BucketsManager._get_buckets()
-    if not buckets or (isinstance(buckets, list) and len(buckets) == 0):
-        console.print(
-            "You've got no buckets! You can create one with `stateless-cli buckets create`."
-        )
-        return
+    offset = 0
+    while True:
+        response = BucketsManager._get_buckets(offset=offset, limit=limit)
+        buckets = response["items"]
+        total = response.get("total", len(buckets))
 
-    items = [
-        (
-            bucket["id"],
-            bucket["name"],
-            bucket["chain"]["name"],
-            "\n".join(
-                [f"{offering['provider']['name']}" for offering in bucket["offerings"]]
-            ),
-            f"https://api.stateless.solutions/{get_route_by_chain_id(int(bucket['chain_id']))}/v1/{bucket['id']}",
+        if not buckets:
+            console.print(
+                "You've got no buckets! You can create one with `stateless-cli buckets create`."
+            )
+            break
+
+        items = [
+            (
+                bucket["id"],
+                bucket["name"],
+                bucket["chain"]["name"],
+                "\n".join(
+                    [
+                        f"{offering['provider']['name']}"
+                        for offering in bucket["offerings"]
+                    ]
+                ),
+                "\n".join(
+                    [
+                        f"{entrypoint['region']['name']} [{len(offering['entrypoints'])}]"
+                        for offering in bucket["offerings"]
+                        for entrypoint in offering["entrypoints"]
+                    ]
+                )
+                if any(offering["entrypoints"] for offering in bucket["offerings"])
+                else "No entrypoints in this bucket",
+                f"https://api.stateless.solutions/{get_route_by_chain_id(int(bucket['chain_id']))}/v1/{bucket['id']}",
+            )
+            for bucket in buckets
+        ]
+        BucketsManager._print_table(
+            items, ["ID", "Name", "Chain", "Offerings", "Entrypoints per Region", "URL"]
         )
-        for bucket in buckets
-    ]
-    BucketsManager._print_table(items, ["ID", "Name", "Chain", "Offerings"])
+
+        if len(buckets) < limit or offset + limit >= total:
+            console.print("End of buckets list.")
+            break
+
+        navigate = inquirer.list_input(
+            "Navigate pages", choices=["Next", "Previous", "Exit"], carousel=True
+        )
+
+        if navigate == "Next":
+            offset += limit
+        elif navigate == "Previous" and offset - limit >= 0:
+            offset -= limit
+        else:
+            break
 
 
 @buckets_app.command("create")
-def buckets_create(config_file: Optional[str] = Option(None, "--config-file", "-c")):
+def buckets_create(config_file: Optional[str] = Option(None, "--config_file", "-c")):
     user_guard()
-    if config_file:
-        bucket_create = parse_config_file(config_file, BucketCreate)
-    else:
-        response = make_request_with_api_key("GET", V1Routes.CHAINS)
-        chains = [
-            (str(item["name"]), str(item["chain_id"]))
-            for item in response.json()["items"]
-        ]
-        questions = [
-            inquirer.Text("name", message="Enter the name of the bucket"),
-            inquirer.List(
-                "chain_id",
-                message="Choose a blockchain for this bucket",
-                choices=chains,
-                carousel=True,
-            ),
-        ]
-        answers = inquirer.prompt(questions)
+    while True:
+        if config_file:
+            bucket_create = parse_config_file(config_file, BucketCreate)
+        else:
+            response = make_request_with_api_key("GET", V1Routes.CHAINS)
+            chains = [
+                (str(item["name"]), str(item["chain_id"]))
+                for item in response.json()["items"]
+            ]
+            questions = [
+                inquirer.Text("name", message="Enter the name of the bucket"),
+                inquirer.List(
+                    "chain_id",
+                    message="Choose a blockchain for this bucket",
+                    choices=chains,
+                    carousel=True,
+                ),
+            ]
+            answers = inquirer.prompt(questions)
 
-        name = answers["name"]
-        chain_id = answers["chain_id"]
+            name = answers["name"]
+            chain_id = answers["chain_id"]
 
-        offering_ids = OfferingsManager._select_offerings(
-            "Choose the offerings to associate with the bucket", int(chain_id)
+            offering_ids = OfferingsManager._select_offerings(
+                "Choose the offerings to associate with the bucket", int(chain_id)
+            )
+            bucket_create = BucketCreate(
+                name=name, chain_id=chain_id, offerings=offering_ids
+            )
+
+        response = make_request_with_api_key(
+            "POST", V1Routes.BUCKETS, bucket_create.model_dump_json()
         )
-        bucket_create = BucketCreate(
-            name=name, chain_id=chain_id, offerings=offering_ids
-        )
+        json_response = response.json()
 
-    response = make_request_with_api_key(
-        "POST", V1Routes.BUCKETS, bucket_create.model_dump_json()
-    )
-    json_response = response.json()
-
-    if response.status_code == 201:
-        chain_route = get_route_by_chain_id(int(chain_id))
-        console.print(
-            f"Your bucket has been created, and your URL is: https://api.stateless.solutions/{chain_route}/v1/{json_response['id']}"
-        )
-    else:
-        console.print(f"Error creating bucket: {json_response['detail']}")
+        if response.status_code == 201:
+            chain_route = get_route_by_chain_id(int(chain_id))
+            console.print(
+                f"Your bucket has been created, and your URL is: https://api.stateless.solutions/{chain_route}/v1/{json_response['id']}"
+            )
+            create_another = inquirer.confirm(
+                "Would you like to create another bucket?"
+            )
+            if not create_another:
+                break
+        else:
+            console.print(f"Error creating bucket: {json_response['detail']}")
+            break
 
 
 @buckets_app.command("update")

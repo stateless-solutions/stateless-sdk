@@ -2,22 +2,29 @@ from typing import Optional
 
 import inquirer
 from rich.console import Console
-from rich.table import Table
 from typer import Argument, Exit, Option, Typer
 
 from ..models.entrypoints import EntrypointCreate, EntrypointUpdate
 from ..routes import V1Routes
-from ..utils import make_request_with_api_key, parse_config_file, provider_guard, secho
+from ..utils import (
+    BaseManager,
+    make_request_with_api_key,
+    parse_config_file,
+    provider_guard,
+    secho,
+)
 
 console = Console()
 entrypoints_app = Typer()
 
 
-class EntrypointsManager:
+class EntrypointsManager(BaseManager):
     @staticmethod
-    def _get_offerings():
-        response = make_request_with_api_key("GET", V1Routes.LIST_OFFERINGS)
-        offerings = response.json().get("items")
+    def _get_offerings(chain_id: Optional[int] = None, offset=0, limit=10):
+        params = {"chain_id": chain_id} if chain_id else {}
+        offerings = EntrypointsManager.make_paginated_request(
+            V1Routes.LIST_OFFERINGS, offset, limit, params=params
+        )
         if not offerings:
             raise Exit(
                 secho(
@@ -48,69 +55,65 @@ class EntrypointsManager:
         answers = inquirer.prompt(questions)
         return answers["entrypoint"]
 
-    @staticmethod
-    def _print_table(items, columns):
-        table = Table(show_header=True, header_style="green", padding=(0, 1, 0, 1))
-        for col in columns:
-            table.add_column(col)
-
-        for item in items:
-            table.add_row(*item, end_section=True)
-
-        console.print(table)
-
 
 @entrypoints_app.command("create")
 def entrypoint_create(config_file: Optional[str] = Option(None, "--config-file", "-c")):
     provider_guard()
-    if config_file:
-        entrypoint_create = parse_config_file(config_file, EntrypointCreate)
-    else:
-        offerings = [
-            (item["chain"]["name"], item["id"])
-            for item in EntrypointsManager._get_offerings()
-        ]
-        regions = [
-            (item["name"], item["id"]) for item in EntrypointsManager._get_regions()
-        ]
-        questions = [
-            inquirer.List(
-                "offering",
-                message="Which offering would you like to create an entrypoint for?",
-                choices=offerings,
-                carousel=True,
-            ),
-            inquirer.List(
-                "region",
-                message="Which region would you like to create an entrypoint in?",
-                choices=regions,
-                carousel=True,
-            ),
-            inquirer.Text(
-                "url",
-                message="What is the URL of the entrypoint?",
-                validate=lambda _, x: x.startswith("https://")
-                or x.startswith("http://"),
-            ),
-        ]
-        answers = inquirer.prompt(questions)
-        entrypoint_create = EntrypointCreate(
-            url=answers["url"],
-            offering_id=answers["offering"],
-            region_id=answers["region"],
-        )
+    while True:
+        if config_file:
+            entrypoint_create = parse_config_file(config_file, EntrypointCreate)
+        else:
+            offerings = [
+                (item["chain"]["name"], item["id"])
+                for item in EntrypointsManager._get_offerings()
+            ]
+            regions = [
+                (item["name"], item["id"]) for item in EntrypointsManager._get_regions()
+            ]
+            questions = [
+                inquirer.List(
+                    "offering",
+                    message="Which offering would you like to create an entrypoint for?",
+                    choices=offerings,
+                    carousel=True,
+                ),
+                inquirer.List(
+                    "region",
+                    message="Which region would you like to create an entrypoint in?",
+                    choices=regions,
+                    carousel=True,
+                ),
+                inquirer.Text(
+                    "url",
+                    message="What is the URL of the entrypoint?",
+                    validate=lambda _, x: x.startswith("https://")
+                    or x.startswith("http://"),
+                ),
+            ]
+            answers = inquirer.prompt(questions)
+            entrypoint_create = EntrypointCreate(
+                url=answers["url"],
+                offering_id=answers["offering"],
+                region_id=answers["region"],
+            )
 
-    response = make_request_with_api_key(
-        "POST", V1Routes.ENTRYPOINTS, entrypoint_create.model_dump_json()
-    )
-    json_response = response.json()
-
-    if response.status_code == 201:
-        console.print(
-            f"Successfully created entrypoint with the following URL: {json_response['url']}"
+        response = make_request_with_api_key(
+            "POST", V1Routes.ENTRYPOINTS, entrypoint_create.model_dump_json()
         )
-    else:
-        console.print(f"Error creating entrypoint: {json_response['detail']}")
+        json_response = response.json()
+
+        if response.status_code == 201:
+            console.print(
+                f"Successfully created entrypoint with the following URL: {json_response['url']}"
+            )
+            create_another = inquirer.confirm(
+                "Would you like to create another entrypoint?"
+            )
+            if not create_another:
+                break
+        else:
+            console.print(f"Error creating entrypoint: {json_response['detail']}")
+            break
 
 
 @entrypoints_app.command("view")
@@ -205,6 +208,7 @@ def entrypoint_list(
     offering_id: Optional[str] = Argument(
         None, help="The UUID of the offering to list entrypoints for."
     ),
+    limit: int = Option(10, help="Number of entrypoints per page."),
 ):
     provider_guard()
     offerings = [
@@ -225,10 +229,38 @@ def entrypoint_list(
     json_response = response.json()
 
     if response.status_code == 200:
-        items = [
-            (str(entrypoint["id"]), entrypoint["url"], entrypoint["region"]["name"])
-            for entrypoint in json_response["entrypoints"]
-        ]
-        EntrypointsManager._print_table(items, ["Entrypoint ID", "URL", "Region"])
+        entrypoints = json_response["entrypoints"]
+        total = len(entrypoints)
+        offset = 0
+
+        while True:
+            # Paginate entrypoints client-side
+            page = entrypoints[offset : offset + limit]
+            items = [
+                (str(entrypoint["id"]), entrypoint["url"], entrypoint["region"]["name"])
+                for entrypoint in page
+            ]
+            EntrypointsManager._print_table(items, ["Entrypoint ID", "URL", "Region"])
+
+            if not items or len(page) < limit or offset + limit >= total:
+                console.print("End of entrypoints list.")
+                break
+
+            navigate = inquirer.list_input(
+                "Navigate pages", choices=["Next", "Previous", "Exit"], carousel=True
+            )
+
+            if navigate == "Next":
+                if offset + limit < total:
+                    offset += limit
+                else:
+                    console.print("You are at the end of the list.")
+            elif navigate == "Previous":
+                if offset - limit >= 0:
+                    offset -= limit
+                else:
+                    console.print("You are at the beginning of the list.")
+            else:
+                break
     else:
         console.print(f"Error listing entrypoints: {json_response['detail']}")

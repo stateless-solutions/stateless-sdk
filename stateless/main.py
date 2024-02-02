@@ -1,6 +1,7 @@
 import webbrowser
 from typing import Annotated, Optional
 
+import httpx
 from typer import Context, Exit, Option, Typer, confirm, secho
 
 from .cli.commands.api_keys import api_keys_app
@@ -34,12 +35,23 @@ ascii_art = r"""
  |_____/ \__\__,_|\__\___|_|\___||___/___/  \_____|______|_____|                                                        
 """  # noqa: W291
 
-__version__ = "0.0.8" # Keep this in sync with pyproject.toml
+__version__ = "0.0.9-beta"  # Keep this in sync with pyproject.toml
+
 
 def version_callback(value: bool):
     if value:
         print(f"Stateless CLI Version: {__version__}")
         raise Exit()
+
+
+def latest_version_callback():
+    with httpx.Client() as client:
+        response = client.get("https://pypi.org/pypi/stateless-sdk/json")
+        version = response.json()["info"]["version"]
+
+        if version != __version__:
+            secho(f"New version available: {version}", fg="yellow")
+            secho("Run `pip install stateless-sdk --upgrade` to update", fg="yellow")
 
 
 @app.callback(invoke_without_command=True)
@@ -52,15 +64,17 @@ def main(
     if ctx.invoked_subcommand is None:
         # ASCII Art Logo
         secho(ascii_art, fg="green")
+        latest_version_callback()
 
         if not get_api_key_from_env():
             if confirm("Do you need an API key to proceed?"):
-                secho("Redirecting to the API key registration page, afterwards please add it to your environment variables...", fg="red")
+                secho(
+                    "Redirecting to the API key registration page, afterwards please add it to your environment variables...",
+                    fg="red",
+                )
                 webbrowser.open("https://app.stateless.solutions")
         else:
-            response = make_request_with_api_key(
-                "GET", V1Routes.ACCOUNT_PROFILE
-            )
+            response = make_request_with_api_key("GET", V1Routes.ACCOUNT_PROFILE)
             json_response = response.json()
 
             if response.status_code == 200:
@@ -77,6 +91,7 @@ def main(
                     f"Error getting account profile: {json_response['detail']}",
                     fg="red",
                 )
+
 
 def _main():
     app()
