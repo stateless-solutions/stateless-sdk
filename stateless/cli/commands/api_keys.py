@@ -22,7 +22,8 @@ class APIKeysManager(BaseManager):
 
     @staticmethod
     def _select_api_key(prompt_message):
-        api_keys = APIKeysManager._get_api_keys()
+        response = APIKeysManager._get_api_keys()
+        api_keys = response["items"]
         choices = [(key["name"], key["id"]) for key in api_keys]
         questions = [
             inquirer.List(

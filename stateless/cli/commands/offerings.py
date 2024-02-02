@@ -29,7 +29,7 @@ class OfferingsManager(BaseManager):
     def _select_offering(prompt_message, chain_id=None):
         offerings = [
             (f"{item['chain']['name']} - {item['provider']['name']}", item["id"])
-            for item in OfferingsManager._get_offerings(chain_id)
+            for item in OfferingsManager._get_offerings(chain_id)["items"]
         ]
         questions = [
             inquirer.List(
@@ -44,7 +44,7 @@ class OfferingsManager(BaseManager):
 
     @staticmethod
     def _select_offerings(prompt_message, chain_id=None, selected_offerings=None):
-        offerings = OfferingsManager._get_offerings(chain_id)
+        offerings = OfferingsManager._get_offerings(chain_id)["items"]
         choices = [
             (
                 "{}".format(offering["provider"]["name"]),
