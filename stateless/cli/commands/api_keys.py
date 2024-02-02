@@ -16,9 +16,12 @@ api_keys_app = Typer()
 
 class APIKeysManager:
     @staticmethod
-    def _get_api_keys():
-        response = make_request_with_api_key("GET", V1Routes.LIST_API_KEYS)
-        return response.json()["items"]
+    def _get_api_keys(offset=0, limit=10):
+        params = {"offset": offset, "limit": limit}
+        response = make_request_with_api_key(
+            "GET", V1Routes.LIST_API_KEYS, params=params
+        )
+        return response.json()
 
     @staticmethod
     def _select_api_key(prompt_message):
@@ -133,10 +136,30 @@ def get_api_key(
 
 
 @api_keys_app.command("list")
-def list_api_keys():
-    api_keys = APIKeysManager._get_api_keys()
-    items = [(key["id"], key["name"]) for key in api_keys]
-    APIKeysManager._print_table(items, ["ID", "Name"])
+def list_api_keys(limit: int = Option(10, help="Number of API keys per page.")):
+    offset = 0
+    while True:
+        response = APIKeysManager._get_api_keys(offset=offset, limit=limit)
+        api_keys = response["items"]
+        total = response.get("total", 0)
+
+        items = [(key["id"], key["name"]) for key in api_keys]
+        APIKeysManager._print_table(items, ["ID", "Name"])
+
+        if not api_keys or len(api_keys) < limit or offset + limit >= total:
+            console.print("End of API keys list.")
+            break
+
+        navigate = inquirer.list_input(
+            "Navigate pages", choices=["Next", "Previous", "Exit"], carousel=True
+        )
+
+        if navigate == "Next":
+            offset += limit
+        elif navigate == "Previous" and offset - limit >= 0:
+            offset -= limit
+        else:
+            break
 
 
 @api_keys_app.command("delete")

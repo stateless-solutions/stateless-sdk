@@ -50,14 +50,14 @@ def user_guard():
         raise Exit()
 
 def make_request_with_api_key(
-    method: str, url: str, data: str = None
+    method: str, url: str, data: str = None, params: dict = None
 ) -> httpx.Response:
     api_key = get_api_key_from_env()
     headers = {"X-API-KEY": api_key}
     try:
         with httpx.Client() as client:
             if method == "GET":
-                response = client.get(url, headers=headers)
+                response = client.get(url, headers=headers, params=params)
             elif method == "POST":
                 response = client.post(url, headers=headers, content=data)
             elif method == "DELETE":
