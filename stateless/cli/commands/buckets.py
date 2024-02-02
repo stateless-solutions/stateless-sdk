@@ -66,26 +66,33 @@ def buckets_list(limit: int = Option(10, help="Number of buckets per page.")):
                 bucket["chain"]["name"],
                 "\n".join(
                     [
-                        f"{offering['provider']['name']}"
+                        f"{offering['provider']['name']} "
+                        + " ".join(
+                            [
+                                f"{region}[{count}]"
+                                for region, count in {
+                                    entrypoint["region"]["name"]: len(
+                                        [
+                                            ep
+                                            for ep in offering["entrypoints"]
+                                            if ep["region"]["name"]
+                                            == entrypoint["region"]["name"]
+                                        ]
+                                    )
+                                    for offering in bucket["offerings"]
+                                    for entrypoint in offering["entrypoints"]
+                                }.items()
+                            ]
+                        )
                         for offering in bucket["offerings"]
                     ]
                 ),
-                "\n".join(
-                    [
-                        f"{entrypoint['region']['name']} [{len(offering['entrypoints'])}]"
-                        for offering in bucket["offerings"]
-                        for entrypoint in offering["entrypoints"]
-                    ]
-                )
-                if any(offering["entrypoints"] for offering in bucket["offerings"])
-                else "No entrypoints in this bucket",
                 f"https://api.stateless.solutions/{get_route_by_chain_id(int(bucket['chain_id']))}/v1/{bucket['id']}",
             )
             for bucket in buckets
         ]
-        BucketsManager._print_table(
-            items, ["ID", "Name", "Chain", "Offerings", "Entrypoints per Region", "URL"]
-        )
+
+        BucketsManager._print_table(items, ["ID", "Name", "Chain", "Offerings", "URL"])
 
         if len(buckets) < limit or offset + limit >= total:
             console.print("End of buckets list.")
