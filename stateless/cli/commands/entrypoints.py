@@ -41,8 +41,10 @@ class EntrypointsManager(BaseManager):
 
     @staticmethod
     def _select_entrypoint(prompt_message):
+        response = EntrypointsManager._get_offerings()
+        offerings = response["items"]
         entrypoints = [
-            (item["url"], item["id"]) for item in EntrypointsManager._get_offerings()
+            (item["url"], item["id"]) for item in offerings
         ]
         questions = [
             inquirer.List(
@@ -65,7 +67,7 @@ def entrypoint_create(config_file: Optional[str] = Option(None, "--config-file",
         else:
             offerings = [
                 (item["chain"]["name"], item["id"])
-                for item in EntrypointsManager._get_offerings()
+                for item in EntrypointsManager._get_offerings()["items"]
             ]
             regions = [
                 (item["name"], item["id"]) for item in EntrypointsManager._get_regions()
@@ -213,7 +215,7 @@ def entrypoint_list(
     provider_guard()
     offerings = [
         (item["chain"]["name"], item["id"])
-        for item in EntrypointsManager._get_offerings()
+        for item in EntrypointsManager._get_offerings()["items"]
     ]
     questions = [
         inquirer.List(

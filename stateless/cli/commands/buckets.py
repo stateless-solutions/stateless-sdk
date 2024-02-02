@@ -28,7 +28,8 @@ class BucketsManager(BaseManager):
 
     @staticmethod
     def _select_bucket(prompt_message):
-        buckets = BucketsManager._get_buckets()
+        response = BucketsManager._get_buckets()
+        buckets = response["items"]
         choices = [(bucket["name"], bucket["id"]) for bucket in buckets]
         questions = [
             inquirer.List(
