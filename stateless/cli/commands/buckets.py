@@ -2,7 +2,6 @@ from typing import Optional
 
 import inquirer
 from rich.console import Console
-from rich.table import Table
 from typer import Argument, Option, Typer
 
 from ..models.buckets import BucketCreate, BucketUpdate
@@ -43,17 +42,6 @@ class BucketsManager(BaseManager):
 
         return bucket
 
-    @staticmethod
-    def _print_table(items, columns):
-        table = Table(show_header=True, header_style="green", padding=(0, 1, 0, 1))
-        for col in columns:
-            table.add_column(col)
-
-        for item in items:
-            table.add_row(*item, end_section=True)
-
-        console.print(table)
-
 
 @buckets_app.command("list")
 def buckets_list(limit: int = Option(10, help="Number of buckets per page.")):
@@ -81,11 +69,22 @@ def buckets_list(limit: int = Option(10, help="Number of buckets per page.")):
                         for offering in bucket["offerings"]
                     ]
                 ),
+                "\n".join(
+                    [
+                        f"{entrypoint['region']['name']} [{len(offering['entrypoints'])}]"
+                        for offering in bucket["offerings"]
+                        for entrypoint in offering["entrypoints"]
+                    ]
+                )
+                if any(offering["entrypoints"] for offering in bucket["offerings"])
+                else "No entrypoints in this bucket",
                 f"https://api.stateless.solutions/{get_route_by_chain_id(int(bucket['chain_id']))}/v1/{bucket['id']}",
             )
             for bucket in buckets
         ]
-        BucketsManager._print_table(items, ["ID", "Name", "Chain", "Offerings", "URL"])
+        BucketsManager._print_table(
+            items, ["ID", "Name", "Chain", "Offerings", "Entrypoints per Region", "URL"]
+        )
 
         if len(buckets) < limit or offset + limit >= total:
             console.print("End of buckets list.")
