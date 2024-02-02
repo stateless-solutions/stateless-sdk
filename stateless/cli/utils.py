@@ -27,7 +27,7 @@ class BaseManager:
     def make_paginated_request(route: str, offset=0, limit=10, params={}):
         params = {"offset": offset, "limit": limit, **params}
         response = make_request_with_api_key("GET", route, params=params)
-        return response.json()
+        return response.json()["items"]
 
     @staticmethod
     def _print_table(items, columns):
