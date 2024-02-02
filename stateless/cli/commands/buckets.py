@@ -62,9 +62,7 @@ def buckets_list(limit: int = Option(10, help="Number of buckets per page.")):
     while True:
         response = BucketsManager._get_buckets(offset=offset, limit=limit)
         buckets = response["items"]
-        total = response.get(
-            "total", len(buckets)
-        )
+        total = response.get("total", len(buckets))
 
         if not buckets:
             console.print(
@@ -106,49 +104,56 @@ def buckets_list(limit: int = Option(10, help="Number of buckets per page.")):
 
 
 @buckets_app.command("create")
-def buckets_create(config_file: Optional[str] = Option(None, "--config-file", "-c")):
+def buckets_create(config_file: Optional[str] = Option(None, "--config_file", "-c")):
     user_guard()
-    if config_file:
-        bucket_create = parse_config_file(config_file, BucketCreate)
-    else:
-        response = make_request_with_api_key("GET", V1Routes.CHAINS)
-        chains = [
-            (str(item["name"]), str(item["chain_id"]))
-            for item in response.json()["items"]
-        ]
-        questions = [
-            inquirer.Text("name", message="Enter the name of the bucket"),
-            inquirer.List(
-                "chain_id",
-                message="Choose a blockchain for this bucket",
-                choices=chains,
-                carousel=True,
-            ),
-        ]
-        answers = inquirer.prompt(questions)
+    while True:
+        if config_file:
+            bucket_create = parse_config_file(config_file, BucketCreate)
+        else:
+            response = make_request_with_api_key("GET", V1Routes.CHAINS)
+            chains = [
+                (str(item["name"]), str(item["chain_id"]))
+                for item in response.json()["items"]
+            ]
+            questions = [
+                inquirer.Text("name", message="Enter the name of the bucket"),
+                inquirer.List(
+                    "chain_id",
+                    message="Choose a blockchain for this bucket",
+                    choices=chains,
+                    carousel=True,
+                ),
+            ]
+            answers = inquirer.prompt(questions)
 
-        name = answers["name"]
-        chain_id = answers["chain_id"]
+            name = answers["name"]
+            chain_id = answers["chain_id"]
 
-        offering_ids = OfferingsManager._select_offerings(
-            "Choose the offerings to associate with the bucket", int(chain_id)
+            offering_ids = OfferingsManager._select_offerings(
+                "Choose the offerings to associate with the bucket", int(chain_id)
+            )
+            bucket_create = BucketCreate(
+                name=name, chain_id=chain_id, offerings=offering_ids
+            )
+
+        response = make_request_with_api_key(
+            "POST", V1Routes.BUCKETS, bucket_create.model_dump_json()
         )
-        bucket_create = BucketCreate(
-            name=name, chain_id=chain_id, offerings=offering_ids
-        )
+        json_response = response.json()
 
-    response = make_request_with_api_key(
-        "POST", V1Routes.BUCKETS, bucket_create.model_dump_json()
-    )
-    json_response = response.json()
-
-    if response.status_code == 201:
-        chain_route = get_route_by_chain_id(int(chain_id))
-        console.print(
-            f"Your bucket has been created, and your URL is: https://api.stateless.solutions/{chain_route}/v1/{json_response['id']}"
-        )
-    else:
-        console.print(f"Error creating bucket: {json_response['detail']}")
+        if response.status_code == 201:
+            chain_route = get_route_by_chain_id(int(chain_id))
+            console.print(
+                f"Your bucket has been created, and your URL is: https://api.stateless.solutions/{chain_route}/v1/{json_response['id']}"
+            )
+            create_another = inquirer.confirm(
+                "Would you like to create another bucket?"
+            )
+            if not create_another:
+                break
+        else:
+            console.print(f"Error creating bucket: {json_response['detail']}")
+            break
 
 
 @buckets_app.command("update")

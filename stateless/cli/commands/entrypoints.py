@@ -33,7 +33,7 @@ class EntrypointsManager(BaseManager):
                 )
             )
         return offerings
-    
+
     @staticmethod
     def _get_regions():
         response = make_request_with_api_key("GET", V1Routes.REGIONS)
@@ -59,54 +59,61 @@ class EntrypointsManager(BaseManager):
 @entrypoints_app.command("create")
 def entrypoint_create(config_file: Optional[str] = Option(None, "--config-file", "-c")):
     provider_guard()
-    if config_file:
-        entrypoint_create = parse_config_file(config_file, EntrypointCreate)
-    else:
-        offerings = [
-            (item["chain"]["name"], item["id"])
-            for item in EntrypointsManager._get_offerings()
-        ]
-        regions = [
-            (item["name"], item["id"]) for item in EntrypointsManager._get_regions()
-        ]
-        questions = [
-            inquirer.List(
-                "offering",
-                message="Which offering would you like to create an entrypoint for?",
-                choices=offerings,
-                carousel=True,
-            ),
-            inquirer.List(
-                "region",
-                message="Which region would you like to create an entrypoint in?",
-                choices=regions,
-                carousel=True,
-            ),
-            inquirer.Text(
-                "url",
-                message="What is the URL of the entrypoint?",
-                validate=lambda _, x: x.startswith("https://")
-                or x.startswith("http://"),
-            ),
-        ]
-        answers = inquirer.prompt(questions)
-        entrypoint_create = EntrypointCreate(
-            url=answers["url"],
-            offering_id=answers["offering"],
-            region_id=answers["region"],
-        )
+    while True:
+        if config_file:
+            entrypoint_create = parse_config_file(config_file, EntrypointCreate)
+        else:
+            offerings = [
+                (item["chain"]["name"], item["id"])
+                for item in EntrypointsManager._get_offerings()
+            ]
+            regions = [
+                (item["name"], item["id"]) for item in EntrypointsManager._get_regions()
+            ]
+            questions = [
+                inquirer.List(
+                    "offering",
+                    message="Which offering would you like to create an entrypoint for?",
+                    choices=offerings,
+                    carousel=True,
+                ),
+                inquirer.List(
+                    "region",
+                    message="Which region would you like to create an entrypoint in?",
+                    choices=regions,
+                    carousel=True,
+                ),
+                inquirer.Text(
+                    "url",
+                    message="What is the URL of the entrypoint?",
+                    validate=lambda _, x: x.startswith("https://")
+                    or x.startswith("http://"),
+                ),
+            ]
+            answers = inquirer.prompt(questions)
+            entrypoint_create = EntrypointCreate(
+                url=answers["url"],
+                offering_id=answers["offering"],
+                region_id=answers["region"],
+            )
 
-    response = make_request_with_api_key(
-        "POST", V1Routes.ENTRYPOINTS, entrypoint_create.model_dump_json()
-    )
-    json_response = response.json()
-
-    if response.status_code == 201:
-        console.print(
-            f"Successfully created entrypoint with the following URL: {json_response['url']}"
+        response = make_request_with_api_key(
+            "POST", V1Routes.ENTRYPOINTS, entrypoint_create.model_dump_json()
         )
-    else:
-        console.print(f"Error creating entrypoint: {json_response['detail']}")
+        json_response = response.json()
+
+        if response.status_code == 201:
+            console.print(
+                f"Successfully created entrypoint with the following URL: {json_response['url']}"
+            )
+            create_another = inquirer.confirm(
+                "Would you like to create another entrypoint?"
+            )
+            if not create_another:
+                break
+        else:
+            console.print(f"Error creating entrypoint: {json_response['detail']}")
+            break
 
 
 @entrypoints_app.command("view")
@@ -228,7 +235,7 @@ def entrypoint_list(
 
         while True:
             # Paginate entrypoints client-side
-            page = entrypoints[offset:offset + limit]
+            page = entrypoints[offset : offset + limit]
             items = [
                 (str(entrypoint["id"]), entrypoint["url"], entrypoint["region"]["name"])
                 for entrypoint in page
@@ -240,9 +247,7 @@ def entrypoint_list(
                 break
 
             navigate = inquirer.list_input(
-                "Navigate pages", 
-                choices=["Next", "Previous", "Exit"], 
-                carousel=True
+                "Navigate pages", choices=["Next", "Previous", "Exit"], carousel=True
             )
 
             if navigate == "Next":
