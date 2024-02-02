@@ -21,8 +21,11 @@ offerings_app = Typer()
 class OfferingsManager(BaseManager):
     @staticmethod
     def _get_offerings(chain_id: Optional[int] = None, offset=0, limit=10):
+        params = {}
+        if chain_id is not None:
+            params["chain_id"] = chain_id
         return OfferingsManager.make_paginated_request(
-            V1Routes.LIST_OFFERINGS, offset, limit, params={"chain_id": chain_id}
+            V1Routes.LIST_OFFERINGS, offset, limit, params=params
         )
 
     @staticmethod
@@ -125,7 +128,6 @@ def offerings_list(
             )
             for offering in offerings
         ]
-
         OfferingsManager._print_table(
             items, ["ID", "Provider", "Chain", "Entrypoints", "Regions"]
         )
