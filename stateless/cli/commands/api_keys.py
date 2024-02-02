@@ -3,25 +3,22 @@ from typing import Optional
 
 import inquirer
 from rich.console import Console
-from rich.table import Table
 from typer import Argument, Option, Typer
 
 from ..models.api_keys import APIKeyCreate, APIKeyUpdate
 from ..routes import V1Routes
-from ..utils import make_request_with_api_key, parse_config_file
+from ..utils import BaseManager, make_request_with_api_key, parse_config_file
 
 console = Console()
 api_keys_app = Typer()
 
 
-class APIKeysManager:
+class APIKeysManager(BaseManager):
     @staticmethod
     def _get_api_keys(offset=0, limit=10):
-        params = {"offset": offset, "limit": limit}
-        response = make_request_with_api_key(
-            "GET", V1Routes.LIST_API_KEYS, params=params
+        return APIKeysManager.make_paginated_request(
+            V1Routes.LIST_API_KEYS, offset, limit
         )
-        return response.json()
 
     @staticmethod
     def _select_api_key(prompt_message):
@@ -34,17 +31,6 @@ class APIKeysManager:
         ]
         answers = inquirer.prompt(questions)
         return answers["api_key"]
-
-    @staticmethod
-    def _print_table(items, columns):
-        table = Table(show_header=True, header_style="green", padding=(0, 1, 0, 1))
-        for col in columns:
-            table.add_column(col)
-
-        for item in items:
-            table.add_row(*item, end_section=True)
-
-        console.print(table)
 
 
 @api_keys_app.command("create")
