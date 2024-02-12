@@ -17,6 +17,7 @@ CHAINS_MAPPING = {
     1: "ethereum",
     137: "polygon",
     10: "optimism",
+    42161: "arbitrum-one"
 }
 
 
