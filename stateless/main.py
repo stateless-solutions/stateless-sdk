@@ -74,6 +74,7 @@ def main(
                 )
                 webbrowser.open("https://app.stateless.solutions")
         else:
+            latest_version_callback()
             response = make_request_with_api_key("GET", V1Routes.ACCOUNT_PROFILE)
             json_response = response.json()
 
