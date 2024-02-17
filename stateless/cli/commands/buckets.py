@@ -1,7 +1,11 @@
+import random
+from time import sleep
 from typing import Optional
 
 import inquirer
 from rich.console import Console
+from rich.live import Live
+from rich.table import Table
 from typer import Argument, Option, Typer
 
 from ..models.buckets import BucketCreate, BucketUpdate
@@ -233,6 +237,63 @@ def buckets_get(
         BucketsManager._print_table(items, ["ID", "Name", "Chain", "Offerings", "URL"])
     else:
         console.print(f"Error getting bucket: {json_response['detail']}")
+
+def make_mock_health_check():
+    status_code_choices = [200]*80
+    status_code_choices.extend([504]*10)
+    status_code_choices.extend([500]*7)
+    status_code_choices.extend([404]*3)
+
+    block_num_choices = ["0xdead"]*85
+    block_num_choices.extend(["deac"]*10)
+    block_num_choices.extend(["deaa"]*4)
+    block_num_choices.extend(["beeb"])
+
+    make_node = lambda : (random.choice(status_code_choices), random.choice(block_num_choices), random.gauss(mu=0.45, sigma=0.13))
+
+    return { "Barg Systems": {"US #1": make_node(), "EU #1": make_node()},
+            "NodeFleet": {"US #1": make_node(), "EU #1": make_node()}
+            }
+
+def make_health_table(health_resp):
+    table = Table()
+    table.add_column("Provider")
+    table.add_column("Node")
+    table.add_column("Status")
+    table.add_column("Height")
+    table.add_column("Latency (s)")
+
+    for provider, nodes in health_resp.items():
+        for node_name, perf in nodes.items():
+            status_text_color = "green" if perf[0] == 200 else "red"
+            table.add_row(provider, node_name, "[{}]{}".format(status_text_color, perf[0]), str(int(perf[1], 16)), "{:0.3f}s".format(perf[2]))
+    return table
+
+
+@buckets_app.command("health")
+def buckets_health(
+    bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to view."),
+    live: bool = Option(False, help="Display the healtcheck in a live view."),
+    ) -> None:
+    url = "NONE"
+    user_guard()
+    if not bucket_id:
+        bucket = BucketsManager._select_bucket("Choose the bucket to view")
+        url = f"https://api.stateless.solutions/{get_route_by_chain_id(int(bucket['chain_id']))}/v1/{bucket['id']}",
+
+    print("Making health request to: {}".format(url))
+
+    if live:
+        while True:
+            with Live(make_health_table(make_mock_health_check()), refresh_per_second=3, console=console, screen=True) as live_disp:
+                sleep(0.67)
+                live_disp.update(make_health_table(make_mock_health_check()))
+    else:
+        console.print(make_health_table(make_mock_health_check()))
+
+
+
+
 
 
 @buckets_app.command("delete")
