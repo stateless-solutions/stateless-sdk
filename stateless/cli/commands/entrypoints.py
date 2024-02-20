@@ -53,7 +53,15 @@ class EntrypointsManager(BaseManager):
                 console.print("No entrypoints available.")
                 return None
 
-            entrypoints = [(item["url"], item["id"]) for item in offerings]
+            entrypoints = []
+            for offering in offerings:
+                chain_name = offering["chain"]["name"]
+                for entrypoint in offering["entrypoints"]:
+                    region = entrypoint["region"]["name"]
+                    item = "{} - {}: {}".format(chain_name, region, entrypoint["url"])
+                    entrypoints.append((item, entrypoint["id"]))
+
+            # entrypoints = [(item["url"], item["id"]) for item in offerings]
             navigation_message = ""
             if offset > 0:
                 entrypoints.insert(0, ("Previous Page", "prev"))
