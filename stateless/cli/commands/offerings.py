@@ -47,26 +47,59 @@ class OfferingsManager(BaseManager):
 
     @staticmethod
     def _select_offerings(prompt_message, chain_id=None, selected_offerings=None):
-        offerings = OfferingsManager._get_offerings(chain_id)["items"]
-        choices = [
-            (
-                "{}".format(offering["provider"]["name"]),
-                offering["id"],
-            )
-            for offering in offerings
-        ]
-        questions = [
-            inquirer.Checkbox(
-                "offerings",
-                message=prompt_message,
-                choices=choices,
-                default=selected_offerings,
-                carousel=True,
-            )
-        ]
-        answers = inquirer.prompt(questions)
+        offset = 0
+        limit = 10
+        all_selected_offerings = selected_offerings or []
 
-        return answers["offerings"]
+        while True:
+            response = OfferingsManager._get_offerings(
+                chain_id, offset=offset, limit=limit
+            )
+            offerings = response["items"]
+            total = response["total"]
+
+            if not offerings and offset == 0:  # No offerings available at all
+                console.print("No offerings available.")
+                return all_selected_offerings
+
+            choices = [
+                (offering["provider"]["name"], offering["id"]) for offering in offerings
+            ]
+
+            if offset > 0:
+                choices.insert(0, ("Previous Page", "prev"))
+            if total > offset + limit:
+                choices.append(("Next Page", "next"))
+
+            questions = [
+                inquirer.Checkbox(
+                    "offerings",
+                    message=prompt_message,
+                    choices=choices,
+                    default=all_selected_offerings,
+                    carousel=True,
+                )
+            ]
+            answers = inquirer.prompt(questions)
+            selected = answers["offerings"]
+
+            if "next" in selected:
+                offset += limit
+                all_selected_offerings = [
+                    item for item in selected if item not in ["next", "prev"]
+                ]
+            elif "prev" in selected:
+                offset = max(0, offset - limit)
+                all_selected_offerings = [
+                    item for item in selected if item not in ["next", "prev"]
+                ]
+            else:
+                return selected
+
+            # Remove navigation options from the final selection
+            all_selected_offerings = [
+                item for item in all_selected_offerings if item not in ["next", "prev"]
+            ]
 
 
 @offerings_app.command("view")

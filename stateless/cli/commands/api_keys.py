@@ -22,16 +22,49 @@ class APIKeysManager(BaseManager):
 
     @staticmethod
     def _select_api_key(prompt_message):
-        response = APIKeysManager._get_api_keys()
-        api_keys = response["items"]
-        choices = [(key["name"], key["id"]) for key in api_keys]
-        questions = [
-            inquirer.List(
-                "api_key", message=prompt_message, choices=choices, carousel=True
-            )
-        ]
-        answers = inquirer.prompt(questions)
-        return answers["api_key"]
+        offset = 0
+        limit = 10
+        selected_api_key = None
+        while selected_api_key is None:
+            response = APIKeysManager._get_api_keys(offset=offset, limit=limit)
+            api_keys = response["items"]
+            total = response["total"]
+
+            if not api_keys and offset == 0:  # No API keys available at all
+                console.print("No API keys available.")
+                return None
+
+            choices = [(key["name"], key["id"]) for key in api_keys]
+            navigation_message = ""
+            if offset > 0:
+                choices.insert(0, ("Previous Page", "prev"))
+                navigation_message += "[bold yellow]Previous Page: Go back to the previous page.[/bold yellow]"
+            if total > offset + limit:
+                choices.append(("Next Page", "next"))
+                navigation_message += "[bold yellow]Next Page: Move to the next page of API keys.[/bold yellow]"
+
+            if navigation_message:
+                console.print(navigation_message)
+
+            questions = [
+                inquirer.List(
+                    "api_key",
+                    message=prompt_message,
+                    choices=choices,
+                    carousel=True
+                )
+            ]
+            answers = inquirer.prompt(questions)
+            choice = answers["api_key"]
+
+            if choice == "next":
+                offset += limit
+            elif choice == "prev":
+                offset = max(0, offset - limit)
+            else:
+                selected_api_key = choice
+
+        return selected_api_key
 
 
 @api_keys_app.command("create")
