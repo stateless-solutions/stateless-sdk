@@ -28,20 +28,51 @@ class BucketsManager(BaseManager):
 
     @staticmethod
     def _select_bucket(prompt_message):
-        response = BucketsManager._get_buckets()
-        buckets = response["items"]
-        choices = [(bucket["name"], bucket["id"]) for bucket in buckets]
-        questions = [
-            inquirer.List(
-                "bucket_id", message=prompt_message, choices=choices, carousel=True
-            )
-        ]
-        answers = inquirer.prompt(questions)
-        bucket_id = answers["bucket_id"]
+        offset = 0
+        limit = 10
+        selected_bucket = None
+        while selected_bucket is None:
+            response = BucketsManager._get_buckets(offset=offset, limit=limit)
+            buckets = response.get("items", [])
+            total = response.get("total", 0)
 
-        bucket = next((bucket for bucket in buckets if bucket["id"] == bucket_id), None)
+            if not buckets and offset == 0:  # No buckets available at all
+                console.print("No buckets available.")
+                return None
 
-        return bucket
+            bucket_choices = [(bucket["name"], bucket["id"]) for bucket in buckets]
+            navigation_message = ""
+            # Add navigation choices if applicable
+            if offset > 0:
+                bucket_choices.insert(0, ("Previous Page", "prev"))
+                navigation_message += "[bold yellow]Previous Page: Go back to the previous page.[/bold yellow]"
+            if total > offset + limit:
+                bucket_choices.append(("Next Page", "next"))
+                # Apply yellow color specifically to the "Next Page" message
+                navigation_message += "[bold yellow]Next Page: Move to the next page of buckets.[/bold yellow]"
+
+            if navigation_message:
+                console.print(navigation_message, style="bold cyan")
+
+            questions = [
+                inquirer.List(
+                    "bucket_id",
+                    message=prompt_message,
+                    choices=bucket_choices,
+                    carousel=True
+                )
+            ]
+            answers = inquirer.prompt(questions)
+            choice = answers["bucket_id"]
+
+            if choice == "next":
+                offset += limit
+            elif choice == "prev":
+                offset = max(0, offset - limit)
+            else:
+                selected_bucket = next((bucket for bucket in buckets if bucket["id"] == choice), None)
+
+        return selected_bucket
 
 
 @buckets_app.command("list")

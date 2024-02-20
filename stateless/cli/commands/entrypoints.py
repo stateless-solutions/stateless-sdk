@@ -41,21 +41,49 @@ class EntrypointsManager(BaseManager):
 
     @staticmethod
     def _select_entrypoint(prompt_message):
-        response = EntrypointsManager._get_offerings()
-        offerings = response["items"]
-        entrypoints = [
-            (item["url"], item["id"]) for item in offerings
-        ]
-        questions = [
-            inquirer.List(
-                "entrypoint",
-                message=prompt_message,
-                choices=entrypoints,
-                carousel=True,
-            ),
-        ]
-        answers = inquirer.prompt(questions)
-        return answers["entrypoint"]
+        offset = 0
+        limit = 10
+        selected_entrypoint = None
+        while selected_entrypoint is None:
+            response = EntrypointsManager._get_offerings(offset=offset, limit=limit)
+            offerings = response["items"]
+            total = response["total"]
+
+            if not offerings and offset == 0:  # No offerings available at all
+                console.print("No entrypoints available.")
+                return None
+
+            entrypoints = [(item["url"], item["id"]) for item in offerings]
+            navigation_message = ""
+            if offset > 0:
+                entrypoints.insert(0, ("Previous Page", "prev"))
+                navigation_message += "[bold yellow]Previous Page: Go back to the previous page.[/bold yellow]"
+            if total > offset + limit:
+                entrypoints.append(("Next Page", "next"))
+                navigation_message += "[bold yellow]Next Page: Move to the next page of entrypoints.[/bold yellow]"
+
+            if navigation_message:
+                console.print(navigation_message)
+
+            questions = [
+                inquirer.List(
+                    "entrypoint",
+                    message=prompt_message,
+                    choices=entrypoints,
+                    carousel=True,
+                ),
+            ]
+            answers = inquirer.prompt(questions)
+            choice = answers["entrypoint"]
+
+            if choice == "next":
+                offset += limit
+            elif choice == "prev":
+                offset = max(0, offset - limit)
+            else:
+                selected_entrypoint = choice
+
+        return selected_entrypoint
 
 
 @entrypoints_app.command("create")
