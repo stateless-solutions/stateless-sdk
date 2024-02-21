@@ -29,10 +29,6 @@ dev = [
 ]
 testing = ["pytest", "pytest-asyncio", "pytest-dotenv", "pytest-httpx", "pytest-cov", "respx"]
 
-[project.readme]
-file = "readme.md"
-content-type = "text/markdown"
-
 [tool.setuptools]
 include-package-data = false
 
