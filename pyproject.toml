@@ -7,6 +7,7 @@ name = "stateless-sdk"
 version = "0.0.15" # Keep this in sync with __version__ in stateless/main.py
 authors = [{name = "blockjoe", email = "joe@stateless.solutions"}]
 description = "A CLI for interacting with the Stateless Gateway"
+readme = "readme.md"
 dependencies = [
     "typer~=0.9.0",
     "pydantic~=2.4.2",
