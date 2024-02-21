@@ -294,11 +294,11 @@ def make_health_table(health_resp: list[NodeHealth]):
         else:
             current_node = 1
         if item["height"] == 0:
-            status = "[red]Unhealthy[/red]"
+            status = "[red]BAD[/red]"
             height = "NA"
             latency = "NA"
         else:
-            status = "[green]Healthy[/green]"
+            status = "[green]GOOD[/green]"
             height = str(item["height"])
             latency = "{:0.3f} ms".format(item["latency"])
         table.add_row(item["provider"], "{} #{}".format(item["region"], current_node), status, height, latency)
