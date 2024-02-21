@@ -1,18 +1,18 @@
-import random
 from time import sleep
-from typing import Optional
+from typing import TypedDict, Optional
 
 import inquirer
 from rich.console import Console
 from rich.live import Live
 from rich.table import Table
-from typer import Argument, Option, Typer
+from typer import Argument, Exit, Option, Typer
 
 from ..models.buckets import BucketCreate, BucketUpdate
 from ..routes import V1Routes
 from ..utils import (
     BaseManager,
     get_route_by_chain_id,
+    make_request,
     make_request_with_api_key,
     parse_config_file,
     user_guard,
@@ -269,58 +269,75 @@ def buckets_get(
     else:
         console.print(f"Error getting bucket: {json_response['detail']}")
 
-def make_mock_health_check():
-    status_code_choices = [200]*80
-    status_code_choices.extend([504]*10)
-    status_code_choices.extend([500]*7)
-    status_code_choices.extend([404]*3)
+class NodeHealth(TypedDict):
+    provider: str
+    latency: float
+    height: int
+    region: str
 
-    block_num_choices = ["0xdead"]*85
-    block_num_choices.extend(["deac"]*10)
-    block_num_choices.extend(["deaa"]*4)
-    block_num_choices.extend(["beeb"])
 
-    make_node = lambda : (random.choice(status_code_choices), random.choice(block_num_choices), random.gauss(mu=0.45, sigma=0.13))
-
-    return { "Barg Systems": {"US #1": make_node(), "EU #1": make_node()},
-            "NodeFleet": {"US #1": make_node(), "EU #1": make_node()}
-            }
-
-def make_health_table(health_resp):
+def make_health_table(health_resp: list[NodeHealth]):
     table = Table()
     table.add_column("Provider")
     table.add_column("Node")
     table.add_column("Status")
     table.add_column("Height")
-    table.add_column("Latency (s)")
+    table.add_column("Latency")
 
-    for provider, nodes in health_resp.items():
-        for node_name, perf in nodes.items():
-            status_text_color = "green" if perf[0] == 200 else "red"
-            table.add_row(provider, node_name, "[{}]{}".format(status_text_color, perf[0]), str(int(perf[1], 16)), "{:0.3f}s".format(perf[2]))
+    health_resp = sorted(health_resp, key=lambda x: (x["provider"], x["region"])) #sort alphabetically by provider then region
+    last_provider = ""
+    last_region = ""
+    current_node = 1
+    for item in health_resp:
+        if item["provider"] == last_provider and item["region"] == last_region:
+            current_node += 1
+        else:
+            current_node = 1
+        if item["height"] == 0:
+            status = "[red]X[/red]"
+            height = "NA"
+            latency = "NA"
+        else:
+            status = "[green]O[/green]"
+            height = str(item["height"])
+            latency = "{:0.3f} ms".format(item["latency"])
+        table.add_row(item["provider"], "{} #{}".format(item["region"], current_node), status, height, latency)
+        last_provider = item["provider"]
+        last_region = item["region"]
     return table
+
+
+def make_health_request(url) -> list[NodeHealth]:
+    response = make_request("POST", url)
+    if response.status_code != 200:
+        console.print("Failed to make a health check to {}".format(url))
+        raise Exit(1)
+    return response.json()
 
 
 @buckets_app.command("health")
 def buckets_health(
-    bucket_id: Optional[str] = Argument(None, help="The UUID of the bucket to view."),
+    url: Optional[str] = Argument(None, help="The URL of the bucket to check"),
     live: bool = Option(False, help="Display the healtcheck in a live view."),
     ) -> None:
-    url = "NONE"
-    user_guard()
-    if not bucket_id:
+    if not url:
+        user_guard()
         bucket = BucketsManager._select_bucket("Choose the bucket to view")
-        url = f"https://api.stateless.solutions/{get_route_by_chain_id(int(bucket['chain_id']))}/v1/{bucket['id']}",
-
-    print("Making health request to: {}".format(url))
-
+        url = f"https://api.stateless.solutions/{get_route_by_chain_id(int(bucket['chain_id']))}/v1/{bucket['id']}/health"
+    elif not url.endswith("/health"):
+        if url.endswith("/"):
+            url += "health"
+        else:
+            url += "/health"
     if live:
-        while True:
-            with Live(make_health_table(make_mock_health_check()), refresh_per_second=3, console=console, screen=True) as live_disp:
+        health_resp = make_health_request(url)
+        with Live(make_health_table(health_resp), console=console, screen=True) as live_disp:
+            while True:
                 sleep(0.67)
-                live_disp.update(make_health_table(make_mock_health_check()))
+                health_resp = make_health_request(url)
+                live_disp.update(make_health_table(make_health_request(url)))
     else:
-        console.print(make_health_table(make_mock_health_check()))
+        console.print(make_health_table(make_health_request(url)))
 
 
 
