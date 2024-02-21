@@ -1,14 +1,18 @@
-from typing import Optional
+from time import sleep
+from typing import TypedDict, Optional
 
 import inquirer
 from rich.console import Console
-from typer import Argument, Option, Typer
+from rich.live import Live
+from rich.table import Table
+from typer import Argument, Exit, Option, Typer
 
 from ..models.buckets import BucketCreate, BucketUpdate
 from ..routes import V1Routes
 from ..utils import (
     BaseManager,
     get_route_by_chain_id,
+    make_request,
     make_request_with_api_key,
     parse_config_file,
     user_guard,
@@ -264,6 +268,80 @@ def buckets_get(
         BucketsManager._print_table(items, ["ID", "Name", "Chain", "Offerings", "URL"])
     else:
         console.print(f"Error getting bucket: {json_response['detail']}")
+
+class NodeHealth(TypedDict):
+    provider: str
+    latency: float
+    height: int
+    region: str
+
+
+def make_health_table(health_resp: list[NodeHealth]):
+    table = Table()
+    table.add_column("Provider")
+    table.add_column("Node")
+    table.add_column("Status")
+    table.add_column("Height")
+    table.add_column("Latency")
+
+    health_resp = sorted(health_resp, key=lambda x: (x["provider"], x["region"])) #sort alphabetically by provider then region
+    last_provider = ""
+    last_region = ""
+    current_node = 1
+    for item in health_resp:
+        if item["provider"] == last_provider and item["region"] == last_region:
+            current_node += 1
+        else:
+            current_node = 1
+        if item["height"] == 0:
+            status = "[red]X[/red]"
+            height = "NA"
+            latency = "NA"
+        else:
+            status = "[green]O[/green]"
+            height = str(item["height"])
+            latency = "{:0.3f} ms".format(item["latency"])
+        table.add_row(item["provider"], "{} #{}".format(item["region"], current_node), status, height, latency)
+        last_provider = item["provider"]
+        last_region = item["region"]
+    return table
+
+
+def make_health_request(url) -> list[NodeHealth]:
+    response = make_request("POST", url)
+    if response.status_code != 200:
+        console.print("Failed to make a health check to {}".format(url))
+        raise Exit(1)
+    return response.json()
+
+
+@buckets_app.command("health")
+def buckets_health(
+    url: Optional[str] = Argument(None, help="The URL of the bucket to check"),
+    live: bool = Option(False, help="Display the healtcheck in a live view."),
+    ) -> None:
+    if not url:
+        user_guard()
+        bucket = BucketsManager._select_bucket("Choose the bucket to view")
+        url = f"https://api.stateless.solutions/{get_route_by_chain_id(int(bucket['chain_id']))}/v1/{bucket['id']}/health"
+    elif not url.endswith("/health"):
+        if url.endswith("/"):
+            url += "health"
+        else:
+            url += "/health"
+    if live:
+        health_resp = make_health_request(url)
+        with Live(make_health_table(health_resp), console=console, screen=True) as live_disp:
+            while True:
+                sleep(0.67)
+                health_resp = make_health_request(url)
+                live_disp.update(make_health_table(make_health_request(url)))
+    else:
+        console.print(make_health_table(make_health_request(url)))
+
+
+
+
 
 
 @buckets_app.command("delete")

@@ -77,11 +77,7 @@ def user_guard():
         raise Exit()
 
 
-def make_request_with_api_key(
-    method: str, url: str, data: str = None, params: dict = None
-) -> httpx.Response:
-    api_key = get_api_key_from_env()
-    headers = {"X-API-KEY": api_key}
+def make_request(method: str, url: str, data: str = None, params: dict = None, headers: dict = None) -> httpx.Response:
     try:
         with httpx.Client() as client:
             if method == "GET":
@@ -104,6 +100,14 @@ def make_request_with_api_key(
         return response
     except httpx.HTTPError:
         raise Exit(1)
+
+
+def make_request_with_api_key(
+    method: str, url: str, data: str = None, params: dict = None
+) -> httpx.Response:
+    api_key = get_api_key_from_env()
+    headers = {"X-API-KEY": api_key}
+    return make_request(method, url, data, params, headers)
 
 
 def parse_config_file(file_path: str, model: Type[BaseModel]) -> Type[BaseModel]:
