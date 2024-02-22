@@ -35,7 +35,7 @@ ascii_art = r"""
  |_____/ \__\__,_|\__\___|_|\___||___/___/  \_____|______|_____|                                                        
 """  # noqa: W291
 
-__version__ = "0.0.16"  # Keep this in sync with pyproject.toml
+__version__ = "0.0.17"  # Keep this in sync with pyproject.toml
 
 
 def version_callback(value: bool):
