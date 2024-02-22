@@ -279,7 +279,7 @@ class NodeHealth(TypedDict):
 
 
 
-def make_health_table(url: str, health_resp: list[NodeHealth]):
+def make_health_table(url: str, health_resp: list[NodeHealth], centered: bool = True):
     parts = url.split("/")
     chain = "".join(parts[3].split("-")).title()
     bucket_id = parts[5]
@@ -320,7 +320,7 @@ def make_health_table(url: str, health_resp: list[NodeHealth]):
         table.add_row(item["provider"], "{} #{}".format(item["region"], current_node), status, height, latency)
         last_provider = item["provider"]
         last_region = item["region"]
-    return Layout(Align(table, align="center", vertical="middle"))
+    return Layout(Align(table, align="center", vertical="middle")) if centered else table
 
 
 def make_health_request(url) -> list[NodeHealth]:
@@ -353,7 +353,7 @@ def buckets_health(
                 health_resp = make_health_request(url)
                 live_disp.update(make_health_table(url, make_health_request(url)))
     else:
-        console.print(make_health_table(url, make_health_request(url)))
+        console.print(make_health_table(url, make_health_request(url), False))
 
 
 
