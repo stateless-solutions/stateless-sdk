@@ -2,7 +2,9 @@ from time import sleep
 from typing import Optional, TypedDict
 
 import inquirer
+from rich.align import Align
 from rich.console import Console
+from rich.layout import Layout
 from rich.live import Live
 from rich.table import Table
 from typer import Argument, Exit, Option, Typer
@@ -277,8 +279,12 @@ class NodeHealth(TypedDict):
 
 
 
-def make_health_table(health_resp: list[NodeHealth]):
-    table = Table()
+def make_health_table(url: str, health_resp: list[NodeHealth], centered: bool = True):
+    parts = url.split("/")
+    chain = "".join(parts[3].split("-")).title()
+    bucket_id = parts[5]
+
+    table = Table(title="{} - {}".format(chain, bucket_id))
     table.add_column("Provider")
     table.add_column("Node")
     table.add_column("Status")
@@ -314,7 +320,7 @@ def make_health_table(health_resp: list[NodeHealth]):
         table.add_row(item["provider"], "{} #{}".format(item["region"], current_node), status, height, latency)
         last_provider = item["provider"]
         last_region = item["region"]
-    return table
+    return Layout(Align(table, align="center", vertical="middle")) if centered else table
 
 
 def make_health_request(url) -> list[NodeHealth]:
@@ -341,13 +347,13 @@ def buckets_health(
             url += "/health"
     if live:
         health_resp = make_health_request(url)
-        with Live(make_health_table(health_resp), console=console, screen=True) as live_disp:
+        with Live(make_health_table(url, health_resp), console=console, screen=True) as live_disp:
             while True:
                 sleep(0.67)
                 health_resp = make_health_request(url)
-                live_disp.update(make_health_table(make_health_request(url)))
+                live_disp.update(make_health_table(url, make_health_request(url)))
     else:
-        console.print(make_health_table(make_health_request(url)))
+        console.print(make_health_table(url, make_health_request(url), False))
 
 
 
