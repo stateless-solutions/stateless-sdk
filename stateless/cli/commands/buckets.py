@@ -281,7 +281,7 @@ class NodeHealth(TypedDict):
 
 def make_health_table(url: str, health_resp: list[NodeHealth], centered: bool = True):
     parts = url.split("/")
-    chain = "".join(parts[3].split("-")).title()
+    chain = " ".join(parts[3].split("-")).title()
     bucket_id = parts[5]
 
     table = Table(title="{} - {}".format(chain, bucket_id))
