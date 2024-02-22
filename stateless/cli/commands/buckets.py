@@ -276,6 +276,7 @@ class NodeHealth(TypedDict):
     region: str
 
 
+
 def make_health_table(health_resp: list[NodeHealth]):
     table = Table()
     table.add_column("Provider")
@@ -288,6 +289,9 @@ def make_health_table(health_resp: list[NodeHealth]):
     last_provider = ""
     last_region = ""
     current_node = 1
+    heights = [item["height"] for item in health_resp]
+    height_max = max(heights)
+
     for item in health_resp:
         if item["provider"] == last_provider and item["region"] == last_region:
             current_node += 1
@@ -295,11 +299,17 @@ def make_health_table(health_resp: list[NodeHealth]):
             current_node = 1
         if item["height"] == 0:
             status = "[red]FAILURE[/red]"
-            height = "NA"
-            latency = "NA"
+            height = "[red]NA[/red]"
+            latency = "[red]NA[/red]"
         else:
             status = "[green]SUCCESS[/green]"
-            height = str(item["height"])
+            if item["height"] < height_max - 100:
+                height = "[red]{}[/red]".format(item["height"])
+            elif item["height"] < height_max - 25:
+                height = "[yellow]{}[/yellow]".format(item["height"])
+            else:
+                height = "[green]{}[/green]".format(item["height"])
+
             latency = "{:0.3f} ms".format(item["latency"])
         table.add_row(item["provider"], "{} #{}".format(item["region"], current_node), status, height, latency)
         last_provider = item["provider"]
