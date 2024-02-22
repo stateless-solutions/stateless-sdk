@@ -192,6 +192,27 @@ stateless-cli buckets delete <bucket_id>
 
 This command provides the functionality to remove a Bucket from an account. The user will be prompted to select a bucket for deletion. Please note that this action will permanently delete the specified Bucket resource and all its associated data. A confirmation message will be displayed upon successful deletion.
 
+### Check Health of Bucket Nodes
+
+```bash
+stateless-cli buckets health
+```
+
+Presents a list of Buckets to select from. After selection, it shows the node status, block height, and latency for each provider within the Bucket.
+
+```bash
+stateless-cli buckets health <url>
+```
+
+Checks the health of a specific bucket.
+
+```bash
+stateless-cli buckets health --live
+stateless-cli buckets health <url> --live
+```
+
+By appending the --live flag to the health check commands, the metrics will be updated in real-time, offering dynamic and up-to-date information on the nodes' status.
+
 ## Entrypoints
 
 Entrypoints are specific URLs or access points that data providers use to
