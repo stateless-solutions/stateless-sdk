@@ -13,12 +13,7 @@ from .routes import V1Routes
 
 console = Console()
 
-CHAINS_MAPPING = {
-    1: "ethereum",
-    137: "polygon",
-    10: "optimism",
-    42161: "arbitrum-one"
-}
+CHAINS_MAPPING = {1: "ethereum", 137: "polygon", 10: "optimism", 42161: "arbitrum-one"}
 
 
 class BaseManager:
@@ -77,7 +72,29 @@ def user_guard():
         raise Exit()
 
 
-def make_request(method: str, url: str, data: str = None, params: dict = None, headers: dict = None) -> httpx.Response:
+def get_account_role():
+    response = make_request_with_api_key("GET", V1Routes.ACCOUNT_PROFILE)
+    json_response = response.json()
+
+    if response.status_code == 200:
+        return json_response["role"]
+
+
+def admin_guard():
+    if get_account_role() != "admin":
+        console.print("You must be logged in as an admin to use this command.")
+        raise Exit()
+
+
+def ops_guard():
+    if get_account_role() != "ops":
+        console.print("You must be logged in as an ops to use this command.")
+        raise Exit()
+
+
+def make_request(
+    method: str, url: str, data: str = None, params: dict = None, headers: dict = None
+) -> httpx.Response:
     try:
         with httpx.Client() as client:
             if method == "GET":

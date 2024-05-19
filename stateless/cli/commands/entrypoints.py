@@ -2,12 +2,18 @@ from typing import Optional
 
 import inquirer
 from rich.console import Console
-from typer import Argument, Exit, Option, Typer
+from typer import Argument, Exit, Option, Typer, prompt
 
-from ..models.entrypoints import EntrypointCreate, EntrypointUpdate
+from ..models.entrypoints import (
+    EntrypointCreate,
+    EntrypointUpdate,
+    InternalProviderEntrypointCreate,
+    InternalProviderEntrypointUpdate,
+)
 from ..routes import V1Routes
 from ..utils import (
     BaseManager,
+    admin_guard,
     make_request_with_api_key,
     parse_config_file,
     provider_guard,
@@ -302,3 +308,116 @@ def entrypoint_list(
                 break
     else:
         console.print(f"Error listing entrypoints: {json_response['detail']}")
+
+
+@entrypoints_app.command("create-internal")
+def entrypoint_create_internal(
+    config_file: Optional[str] = Option(
+        None,
+        "--config-file",
+        "-c",
+        help="The path to a JSON file with the internal provider entrypoint creation data.",
+    ),
+):
+    admin_guard()
+    while True:
+        if config_file:
+            entrypoint_create = parse_config_file(
+                config_file, InternalProviderEntrypointCreate
+            )
+        else:
+            chain_id = prompt("Enter the ID of the chain for the entrypoint", type=int)
+            url = prompt("Enter the URL of the entrypoint")
+            identity = prompt("Enter the identity of the internal provider")
+
+            entrypoint_create = InternalProviderEntrypointCreate(
+                url=url, chain_id=chain_id, identity=identity
+            )
+
+        response = make_request_with_api_key(
+            "POST",
+            V1Routes.INTERNAL_PROVIDER_ENTRYPOINTS,
+            entrypoint_create.model_dump_json(),
+        )
+        json_response = response.json()
+
+        if response.status_code == 201:
+            console.print("Your internal provider entrypoint has been created.")
+            create_another = inquirer.confirm(
+                "Would you like to create another entrypoint?"
+            )
+            if not create_another:
+                break
+        else:
+            console.print(f"Error creating entrypoint: {json_response['detail']}")
+            break
+
+
+@entrypoints_app.command("view-internal")
+def entrypoint_get_internal(
+    entrypoint_id: Optional[str] = Argument(
+        None, help="The UUID of the entrypoint to view."
+    ),
+):
+    admin_guard()
+    entrypoint_id = entrypoint_id or EntrypointsManager._select_entrypoint(
+        "What's the ID of the entrypoint you want to view?"
+    )
+    response = make_request_with_api_key(
+        "GET", f"{V1Routes.INTERNAL_PROVIDER_ENTRYPOINTS}/{entrypoint_id}"
+    )
+    json_response = response.json()
+
+    if response.status_code == 200:
+        items = [
+            (
+                str(json_response["id"]),
+                json_response["url"],
+                json_response["chain"]["name"],
+                json_response["identity"],
+            )
+        ]
+        EntrypointsManager._print_table(
+            items, ["Entrypoint ID", "URL", "Chain", "Identity"]
+        )
+    else:
+        console.print(f"Error getting entrypoint: {json_response['detail']}")
+
+
+@entrypoints_app.command("update-internal")
+def entrypoint_update_internal(
+    entrypoint_id: Optional[str] = Argument(
+        None, help="The UUID of the entrypoint to update."
+    ),
+    config_file: Optional[str] = Option(
+        None,
+        "--config-file",
+        "-c",
+        help="The path to a JSON file with the update data.",
+    ),
+):
+    admin_guard()
+    entrypoint_id = entrypoint_id or EntrypointsManager._select_entrypoint(
+        "What's the ID of the entrypoint you want to update?"
+    )
+    if config_file:
+        entrypoint_update = parse_config_file(
+            config_file, InternalProviderEntrypointUpdate
+        )
+    else:
+        url = prompt("Enter the updated URL of the entrypoint", default=None)
+        identity = prompt("Enter the updated identity of the entrypoint", default=None)
+
+        entrypoint_update = InternalProviderEntrypointUpdate(url=url, identity=identity)
+
+    response = make_request_with_api_key(
+        "PATCH",
+        f"{V1Routes.INTERNAL_PROVIDER_ENTRYPOINTS}/{entrypoint_id}",
+        entrypoint_update.model_dump_json(),
+    )
+    json_response = response.json()
+
+    if response.status_code == 200:
+        console.print("Your internal provider entrypoint has been updated.")
+    else:
+        console.print(f"Error updating entrypoint: {json_response['detail']}")
