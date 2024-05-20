@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stateless-sdk"
-version = "0.0.18" # Keep this in sync with __version__ in stateless/main.py
-authors = [{name = "blockjoe", email = "joe@stateless.solutions"}]
+version = "0.0.19" # Keep this in sync with __version__ in stateless/main.py
+authors = [{ name = "blockjoe", email = "joe@stateless.solutions" }]
 description = "A CLI for interacting with the Stateless Gateway"
 readme = "readme.md"
 dependencies = [
@@ -14,7 +14,7 @@ dependencies = [
     "httpx~=0.24.1",
     "rich~=13.6.0",
     "ujson~=5.8.0",
-    "inquirer~=3.1.4"
+    "inquirer~=3.1.4",
 ]
 requires-python = ">= 3.10"
 
@@ -22,18 +22,21 @@ requires-python = ">= 3.10"
 stateless-cli = "stateless.main:_main"
 
 [project.optional-dependencies]
-dev = [
-    "black>=23.7.0",
-    "flake8",
-    "isort"
+dev = ["black>=23.7.0", "flake8", "isort"]
+testing = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-dotenv",
+    "pytest-httpx",
+    "pytest-cov",
+    "respx",
 ]
-testing = ["pytest", "pytest-asyncio", "pytest-dotenv", "pytest-httpx", "pytest-cov", "respx"]
 
 [tool.setuptools]
 include-package-data = false
 
 [tool.setuptools.packages]
-find = {namespaces = false}
+find = { namespaces = false }
 
 [tool.black]
 extend-exlcude = '^/alembic/versions/.*\.py'
