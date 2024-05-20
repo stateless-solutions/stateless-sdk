@@ -41,6 +41,20 @@ class EntrypointsManager(BaseManager):
         return offerings
 
     @staticmethod
+    def _get_internal_provider_entrypoints(offset=0, limit=10):
+        internal_provider_entrypoints = EntrypointsManager.make_paginated_request(
+            V1Routes.INTERNAL_PROVIDER_ENTRYPOINTS, offset, limit
+        )
+        if not internal_provider_entrypoints:
+            raise Exit(
+                secho(
+                    "No internal provider entrypoints found.",
+                    fg="red",
+                )
+            )
+        return internal_provider_entrypoints
+
+    @staticmethod
     def _get_regions():
         response = make_request_with_api_key("GET", V1Routes.REGIONS)
         return response.json()["items"]
@@ -98,6 +112,65 @@ class EntrypointsManager(BaseManager):
                 selected_entrypoint = choice
 
         return selected_entrypoint
+
+    @staticmethod
+    def _select_internal_entrypoint(prompt_message):
+        offset = 0
+        limit = 10
+        selected_internal_entrypoint = None
+        while selected_internal_entrypoint is None:
+            response = EntrypointsManager._get_internal_provider_entrypoints(
+                offset=offset, limit=limit
+            )
+            internal_entrypoints = response["items"]
+            total = response["total"]
+
+            if (
+                not internal_entrypoints and offset == 0
+            ):  # No internal entrypoints available at all
+                console.print("No internal entrypoints available.")
+                return None
+
+            entrypoints = []
+            for internal_entrypoint in internal_entrypoints:
+                item = (
+                    internal_entrypoint["id"],
+                    str(internal_entrypoint["chain_id"]),
+                    internal_entrypoint["url"],
+                    internal_entrypoint["identity"],
+                )
+                entrypoints.append(item)
+
+            navigation_message = ""
+            if offset > 0:
+                entrypoints.insert(0, ("Previous Page", "prev"))
+                navigation_message += "[bold yellow]Previous Page: Go back to the previous page.[/bold yellow]"
+            if total > offset + limit:
+                entrypoints.append(("Next Page", "next"))
+                navigation_message += "[bold yellow]Next Page: Move to the next page of entrypoints.[/bold yellow]"
+
+            if navigation_message:
+                console.print(navigation_message)
+
+            questions = [
+                inquirer.List(
+                    "entrypoint",
+                    message=prompt_message,
+                    choices=entrypoints,
+                    carousel=True,
+                ),
+            ]
+            answers = inquirer.prompt(questions)
+            choice = answers["entrypoint"]
+
+            if choice == "next":
+                offset += limit
+            elif choice == "prev":
+                offset = max(0, offset - limit)
+            else:
+                selected_internal_entrypoint = choice
+
+        return selected_internal_entrypoint
 
 
 @entrypoints_app.command("create")
@@ -353,37 +426,6 @@ def entrypoint_create_internal(
             break
 
 
-@entrypoints_app.command("view-internal")
-def entrypoint_get_internal(
-    entrypoint_id: Optional[str] = Argument(
-        None, help="The UUID of the entrypoint to view."
-    ),
-):
-    admin_guard()
-    entrypoint_id = entrypoint_id or EntrypointsManager._select_entrypoint(
-        "What's the ID of the entrypoint you want to view?"
-    )
-    response = make_request_with_api_key(
-        "GET", f"{V1Routes.INTERNAL_PROVIDER_ENTRYPOINTS}/{entrypoint_id}"
-    )
-    json_response = response.json()
-
-    if response.status_code == 200:
-        items = [
-            (
-                str(json_response["id"]),
-                json_response["url"],
-                json_response["chain"]["name"],
-                json_response["identity"],
-            )
-        ]
-        EntrypointsManager._print_table(
-            items, ["Entrypoint ID", "URL", "Chain", "Identity"]
-        )
-    else:
-        console.print(f"Error getting entrypoint: {json_response['detail']}")
-
-
 @entrypoints_app.command("update-internal")
 def entrypoint_update_internal(
     entrypoint_id: Optional[str] = Argument(
@@ -397,7 +439,7 @@ def entrypoint_update_internal(
     ),
 ):
     admin_guard()
-    entrypoint_id = entrypoint_id or EntrypointsManager._select_entrypoint(
+    entrypoint_id = entrypoint_id or EntrypointsManager._select_internal_entrypoint(
         "What's the ID of the entrypoint you want to update?"
     )
     if config_file:
@@ -421,3 +463,20 @@ def entrypoint_update_internal(
         console.print("Your internal provider entrypoint has been updated.")
     else:
         console.print(f"Error updating entrypoint: {json_response['detail']}")
+
+
+@entrypoints_app.command("list-internal")
+def entrypoint_list_internal(
+    limit: int = Option(10, help="Number of entrypoints per page."),
+):
+    admin_guard()
+
+    internal_entrypoints = [
+        (item["id"], str(item["chain_id"]), item["url"], item["identity"])
+        for item in EntrypointsManager._get_internal_provider_entrypoints()["items"]
+    ]
+
+    # Print table of internal entrypoints
+    EntrypointsManager._print_table(
+        internal_entrypoints, ["Entrypoint ID", "Chain ID", "URL", "Identity"]
+    )
