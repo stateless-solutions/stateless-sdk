@@ -14,6 +14,7 @@ from ..routes import V1Routes
 from ..utils import (
     BaseManager,
     get_route_by_chain_id,
+    make_identity_param,
     make_request,
     make_request_with_api_key,
     parse_config_file,
@@ -98,7 +99,6 @@ def buckets_list(limit: int = Option(10, help="Number of buckets per page.")):
 
         items = [
             (
-                bucket["id"],
                 bucket["name"],
                 bucket["chain"]["name"],
                 "\n".join(
@@ -125,11 +125,12 @@ def buckets_list(limit: int = Option(10, help="Number of buckets per page.")):
                     ]
                 ),
                 f"https://api.stateless.solutions/{get_route_by_chain_id(int(bucket['chain_id']))}/v1/{bucket['id']}",
+                make_identity_param(bucket["offerings"])
             )
             for bucket in buckets
         ]
 
-        BucketsManager._print_table(items, ["ID", "Name", "Chain", "Offerings", "URL"])
+        BucketsManager._print_table(items, ["Name", "Chain", "Offerings", "URL", "Identities"])
 
         if len(buckets) < limit or offset + limit >= total:
             console.print("End of buckets list.")
@@ -253,7 +254,6 @@ def buckets_get(
         # Display table with bucket info
         items = [
             (
-                bucket["id"],
                 bucket["name"],
                 bucket["chain"]["name"],
                 "\n".join(
@@ -263,11 +263,12 @@ def buckets_get(
                     ]
                 ),
                 f"https://api.stateless.solutions/{get_route_by_chain_id(int(bucket['chain_id']))}/v1/{bucket['id']}",
+                make_identity_param(bucket["offerings"])
             )
             for bucket in [json_response]
         ]
 
-        BucketsManager._print_table(items, ["ID", "Name", "Chain", "Offerings", "URL"])
+        BucketsManager._print_table(items, ["Name", "Chain", "Offerings", "URL", "Identities"])
     else:
         console.print(f"Error getting bucket: {json_response['detail']}")
 
