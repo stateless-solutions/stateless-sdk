@@ -15,6 +15,16 @@ console = Console()
 
 CHAINS_MAPPING = {1: "ethereum", 137: "polygon", 10: "optimism", 42161: "arbitrum-one"}
 
+PROVIDER_IDENTITY_MAPPING = {
+        "Barg Systems": "https://stateless.bargsystems.com",
+        "Nodefleet": "https://stateless.nodefleet.org",
+        "StakeNodes": "https://stateless.stakenodes.org",
+        "Stateless": "https://api.stateless.solutions"
+        }
+
+def make_identity_param(offerings) -> str:
+    identites = [PROVIDER_IDENTITY_MAPPING[offering["provider"]["name"]] for offering in offerings]
+    return "[{}]".format(", ".join(["'{}'".format(identity) for identity in identites]))
 
 class BaseManager:
     console = Console()
@@ -29,7 +39,7 @@ class BaseManager:
     def _print_table(items, columns):
         table = Table(show_header=True, header_style="green", padding=(0, 1, 0, 1))
         for col in columns:
-            table.add_column(col)
+            table.add_column(col, overflow="fold")
 
         for item in items:
             table.add_row(*item, end_section=True)
