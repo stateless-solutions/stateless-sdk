@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stateless-sdk"
-version = "0.0.20" # Keep this in sync with __version__ in stateless/main.py
+version = "0.0.21" # Keep this in sync with __version__ in stateless/main.py
 authors = [{ name = "blockjoe", email = "joe@stateless.solutions" }]
 description = "A CLI for interacting with the Stateless Gateway"
 readme = "readme.md"
