@@ -133,13 +133,13 @@ class EntrypointsManager(BaseManager):
 
             entrypoints = []
             for internal_entrypoint in internal_entrypoints:
-                item = (
+                item = "{} - {} - {} - {}".format(
                     internal_entrypoint["id"],
                     str(internal_entrypoint["chain_id"]),
                     internal_entrypoint["url"],
                     internal_entrypoint["identity"],
                 )
-                entrypoints.append(item)
+                entrypoints.append((item, internal_entrypoint["id"]))
 
             navigation_message = ""
             if offset > 0:
@@ -452,6 +452,8 @@ def entrypoint_update_internal(
 
         entrypoint_update = InternalProviderEntrypointUpdate(url=url, identity=identity)
 
+    print(entrypoint_id)
+    print(entrypoint_update.model_dump_json())
     response = make_request_with_api_key(
         "PATCH",
         f"{V1Routes.INTERNAL_PROVIDER_ENTRYPOINTS}/{entrypoint_id}",
